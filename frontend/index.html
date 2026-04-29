@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSI Bot Dashboard</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 0 auto; padding: 2rem; background: #f5f7fa; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-label { font-size: 0.75rem; color: #718096; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: #2d3748; }
+        .stat-value.positive { color: #48bb78; }
+        .stat-value.negative { color: #f56565; }
+        .panel { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 0.75rem; font-size: 0.75rem; color: #718096; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 0.75rem; border-bottom: 1px solid #e2e8f0; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-buy { background: #c6f6d5; color: #22543d; }
+        .badge-sell { background: #fed7d7; color: #742a2a; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 RSI Bot Dashboard</h1>
+        <div id="status">🔴 Connecting...</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-label">Capital</div>
+            <div class="stat-value" id="capital">₹--</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Portfolio Value</div>
+            <div class="stat-value" id="portfolio">₹--</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Realised P&L</div>
+            <div class="stat-value" id="realized">₹--</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value" id="winrate">--%</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>🔔 Open Positions</h3>
+        <table>
+            <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th></tr></thead>
+            <tbody id="positions"><tr><td colspan="5">Loading...</td></tr></tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <h3>📜 Recent Trades</h3>
+        <table>
+            <thead><tr><th>Time</th><th>Symbol</th><th>Action</th><th>Price</th><th>P&L</th></tr></thead>
+            <tbody id="trades"><tr><td colspan="5">Loading...</td></tr></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8000/api';
+        
+        async function fetchJSON(url) {
+            try {
+                const res = await fetch(url);
+                return await res.json();
+            } catch(e) { return null; }
+        }
+        
+        async function updateDashboard() {
+            // Portfolio stats
+            const portfolio = await fetchJSON(`${API}/portfolio`);
+            if(portfolio) {
+                document.getElementById('capital').textContent = `₹${portfolio.capital.toLocaleString('en-IN')}`;
+                document.getElementById('portfolio').textContent = `₹${portfolio.portfolio_value.toLocaleString('en-IN')}`;
+                const realizedEl = document.getElementById('realized');
+                realizedEl.textContent = `₹${portfolio.realized_pnl.toLocaleString('en-IN')}`;
+                realizedEl.className = `stat-value ${portfolio.realized_pnl >= 0 ? 'positive' : 'negative'}`;
+                document.getElementById('winrate').textContent = `${portfolio.win_rate}%`;
+                document.getElementById('status').textContent = '🟢 Live';
+            }
+            
+            // Positions
+            const positions = await fetchJSON(`${API}/positions`);
+            const posBody = document.getElementById('positions');
+            if(positions?.length) {
+                posBody.innerHTML = positions.map(p => `
+                    <tr>
+                        <td><strong>${p.symbol}</strong></td>
+                        <td>${p.qty}</td>
+                        <td>₹${p.buy_price.toFixed(2)}</td>
+                        <td>₹${p.current_price?.toFixed(2) || '--'}</td>
+                        <td class="${p.unrealized_pnl >= 0 ? 'positive' : 'negative'}" style="color:${p.unrealized_pnl >= 0 ? '#48bb78' : '#f56565'}">
+                            ₹${p.unrealized_pnl?.toFixed(2) || 0}
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                posBody.innerHTML = '<tr><td colspan="5">No open positions</td></tr>';
+            }
+            
+            // Trades
+            const trades = await fetchJSON(`${API}/trades?limit=10`);
+            const tradeBody = document.getElementById('trades');
+            if(trades?.length) {
+                tradeBody.innerHTML = trades.map(t => `
+                    <tr>
+                        <td>${t.time}</td>
+                        <td><strong>${t.symbol}</strong></td>
+                        <td><span class="badge ${t.direction === 'BUY' ? 'badge-buy' : 'badge-sell'}">${t.direction}</span></td>
+                        <td>₹${t.price.toFixed(2)}</td>
+                        <td>${t.pnl ? `₹${t.pnl.toFixed(2)}` : '--'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tradeBody.innerHTML = '<tr><td colspan="5">No trades yet</td></tr>';
+            }
+        }
+        
+        // Initial load + auto-refresh every 5 seconds
+        updateDashboard();
+        setInterval(updateDashboard, 5000);
+    </script>
+</body>
+</html>

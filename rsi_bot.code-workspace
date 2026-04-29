@@ -1,0 +1,45 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "./venv/Scripts/python.exe",
+        "editor.fontSize": 14,
+        "editor.tabSize": 4,
+        "editor.formatOnSave": true,
+        "editor.wordWrap": "on",
+        "editor.minimap.enabled": false,
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/*.pyc": true,
+            "**/venv": true
+        },
+        "python.terminal.activateEnvironment": true,
+        "terminal.integrated.defaultProfile.windows": "Git Bash",
+        "workbench.colorTheme": "Light 2026"
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "▶ Run RSI Bot v2",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/main.py",
+                "console": "integratedTerminal",
+                "justMyCode": true
+            }
+        ]
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.black-formatter",
+            "mechatroner.rainbow-csv",
+            "GrapeCity.gc-excelviewer",
+            "njpwerner.autodocstring"
+        ]
+    }
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RSI Bot Dashboard</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #1e1e2f; color: #fff; }
+        .container { max-width: 1200px; margin: auto; }
+        .card { background: #2d2d44; padding: 20px; border-radius: 10px; margin: 10px; }
+        .stats { display: flex; gap: 20px; flex-wrap: wrap; }
+        .stat { background: #3d3d5c; padding: 15px; border-radius: 8px; flex: 1; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #4caf50; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #444; }
+        .buy { color: #4caf50; font-weight: bold; }
+        .sell { color: #ff5722; font-weight: bold; }
+        .hold { color: #ffc107; }
+        h2 { margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📈 RSI Bot v2 — Paper Trading Dashboard</h1>
+    
+    <div class="stats" id="stats">
+        <div class="stat">💰 Capital<br><span class="stat-value" id="capital">-</span></div>
+        <div class="stat">📊 Portfolio<br><span class="stat-value" id="portfolio">-</span></div>
+        <div class="stat">🎯 Trades<br><span class="stat-value" id="trades">-</span></div>
+        <div class="stat">🏆 Win Rate<br><span class="stat-value" id="winrate">-</span></div>
+        <div class="stat">📈 Positions<br><span class="stat-value" id="positions">-</span></div>
+    </div>
+    
+    <div class="card">
+        <h2>📋 Open Positions</h2>
+        <table id="positions-table">
+            <thead><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Entry (INR)</th><th>Stop Loss</th><th>Target</th><th>RSI Entry</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h2>📡 RSI Scanner — Watchlist</h2>
+        <table id="scanner-table">
+            <thead><tr><th>Symbol</th><th>Type</th><th>Price (Original)</th><th>Price (INR)</th><th>RSI</th><th>BB %B</th><th>Signal</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+    
+    socket.on('dashboard_update', function(data) {
+        document.getElementById('capital').innerText = '₹' + data.capital.toLocaleString();
+        document.getElementById('portfolio').innerText = '₹' + (data.capital + (data.unrealized_pnl || 0)).toLocaleString();
+        document.getElementById('trades').innerText = data.total_trades;
+        document.getElementById('winrate').innerText = data.win_rate + '%';
+        document.getElementById('positions').innerText = data.positions_count + '/' + data.max_positions;
+        
+        // Open positions table
+        const posBody = document.querySelector('#positions-table tbody');
+        posBody.innerHTML = '';
+        for (const pos of data.positions) {
+            if (pos.status === 'open') {
+                const row = posBody.insertRow();
+                row.insertCell(0).innerText = pos.symbol;
+                row.insertCell(1).innerText = pos.qty;
+                row.insertCell(2).innerText = pos.entry_price;
+                row.insertCell(3).innerText = '₹' + pos.entry_price_inr.toFixed(2);
+                row.insertCell(4).innerText = pos.stop_loss;
+                row.insertCell(5).innerText = pos.target;
+                row.insertCell(6).innerText = pos.rsi_entry;
+            }
+        }
+        
+        // Scanner table
+        const scanBody = document.querySelector('#scanner-table tbody');
+        scanBody.innerHTML = '';
+        for (const [symbol, info] of Object.entries(data.rsi_data)) {
+            const row = scanBody.insertRow();
+            row.insertCell(0).innerText = symbol;
+            row.insertCell(1).innerText = info.type;
+            row.insertCell(2).innerText = info.price;
+            row.insertCell(3).innerText = '₹' + (info.price_in_inr || info.price).toFixed(2);
+            row.insertCell(4).innerText = info.rsi;
+            row.insertCell(5).innerText = info.bb_percent_b || '-';
+            const signalCell = row.insertCell(6);
+            signalCell.innerText = info.signal;
+            signalCell.className = info.signal.toLowerCase();
+        }
+    });
+</script>
+</body>
+</html>

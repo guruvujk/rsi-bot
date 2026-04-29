@@ -1,0 +1,428 @@
+# dashboard.py — RSI Bot Live Dashboard
+# FIXES:
+#   1. Added /api/trade POST route (was 404)
+#   2. Added /api/position/update POST route
+#   3. Removed stale external API_BASE_URL calls (bot is self-contained)
+#   4. push_updates runs in daemon thread — no blocking
+#   5. Cleaner bot_state defaults
+
+from flask import Flask, render_template_string, request, jsonify
+from flask_socketio import SocketIO
+import threading, time
+
+app      = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# ── Shared live state (written by main.py, read by dashboard) ────────────────
+bot_state = {
+    "capital"      : 100000,
+    "positions"    : 0,
+    "pnl"          : 0.0,
+    "open_pnl"     : 0.0,
+    "portfolio_val": 100000,
+    "return_pct"   : 0.0,
+    "win_rate"     : 0.0,
+    "total_trades" : 0,
+    "wins"         : 0,
+    "losses"       : 0,
+    "trades"       : [],
+    "watchlist"    : {},
+    "positions"    : {},
+    "paper_mode"   : True,
+}
+
+# ── FIX 1: /api/trade — accept trade notifications from paper_trade.py ───────
+@app.route('/api/trade', methods=['POST'])
+def api_trade():
+    try:
+        data = request.get_json(silent=True) or {}
+        # Optionally log or process — state is already managed by PaperTrader
+        return jsonify({"status": "ok", "received": data}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ── FIX 2: /api/position/update — accept live price updates ─────────────────
+@app.route('/api/position/update', methods=['POST'])
+def api_position_update():
+    try:
+        data    = request.get_json(silent=True) or {}
+        symbol  = data.get("symbol", "")
+        price   = data.get("current_price", 0)
+        if symbol and symbol in bot_state.get("positions", {}):
+            bot_state["positions"][symbol]["current_price"] = float(price)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ── Health check ─────────────────────────────────────────────────────────────
+@app.route('/api/health')
+def api_health():
+    return jsonify({"status": "running", "paper_mode": True}), 200
+
+# ── Main dashboard page ───────────────────────────────────────────────────────
+DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RSI Bot — Paper Trade Dashboard</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #1a1a2e; }
+
+    .header { background: #fff; padding: 14px 28px; border-bottom: 1px solid #e2e8f0;
+              display: flex; align-items: center; justify-content: space-between;
+              box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .header h1 { font-size: 18px; font-weight: 600; color: #2563eb; }
+    .paper-badge { background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 600;
+                   padding: 3px 10px; border-radius: 20px; border: 1px solid #bfdbfe; }
+    .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #16a34a;
+                animation: pulse 1.5s infinite; display: inline-block; margin-right: 6px; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .stats  { display: grid; grid-template-columns: repeat(4,1fr); gap:14px; padding:20px 28px; }
+    .stats2 { display: grid; grid-template-columns: repeat(4,1fr); gap:14px; padding:0 28px 20px; }
+    .stat  { background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+             padding:16px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+    .stat2 { background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+             padding:12px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.05);
+             display:flex; flex-direction:column; align-items:center; }
+    .label { font-size:11px; color:#64748b; text-transform:uppercase;
+             letter-spacing:0.8px; margin-bottom:6px; }
+    .value { font-size:22px; font-weight:600; }
+    .stat2 .value { font-size:20px; }
+
+    .green{color:#16a34a} .red{color:#dc2626} .blue{color:#2563eb} .gray{color:#475569}
+
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:0 28px 20px; }
+    .grid1 { display:grid; grid-template-columns:1fr;    gap:14px; padding:0 28px 20px; }
+    .box { background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+           overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+    .box-title { padding:11px 16px; font-size:12px; font-weight:600; color:#64748b;
+                 border-bottom:1px solid #f1f5f9; text-transform:uppercase;
+                 letter-spacing:0.5px; background:#f8fafc;
+                 display:flex; align-items:center; justify-content:space-between; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { padding:9px 16px; text-align:left; font-size:11px; color:#94a3b8;
+         border-bottom:1px solid #f1f5f9; font-weight:600; background:#f8fafc; }
+    td { padding:9px 16px; border-bottom:1px solid #f8fafc; color:#334155; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:#f8fafc; }
+
+    .badge { display:inline-block; padding:2px 10px; border-radius:20px;
+             font-size:11px; font-weight:600; }
+    .badge-buy  { background:#dcfce7; color:#16a34a; }
+    .badge-sell { background:#fee2e2; color:#dc2626; }
+    .badge-hold { background:#f1f5f9; color:#64748b; }
+
+    .rsi-bar-wrap { width:70px; height:7px; background:#e2e8f0; border-radius:4px;
+                    display:inline-block; vertical-align:middle; }
+    .rsi-bar { height:100%; border-radius:4px; }
+    .win-bar-wrap { width:100%; height:8px; background:#fee2e2; border-radius:4px; margin-top:6px; }
+    .win-bar { height:100%; border-radius:4px; background:#16a34a; }
+    .empty-msg { color:#94a3b8; text-align:center; padding:24px; font-size:13px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <h1>📈 RSI Algo Bot</h1>
+    <span class="paper-badge">📄 Paper Trade</span>
+  </div>
+  <div style="font-size:13px;color:#64748b;">
+    <span class="live-dot"></span>Live &nbsp;|&nbsp;
+    <span id="clock">--:--:--</span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Available Capital</div>
+    <div class="value blue" id="capital">₹1,00,000</div>
+  </div>
+  <div class="stat">
+    <div class="label">Portfolio Value</div>
+    <div class="value" id="portfolio_val">₹1,00,000</div>
+  </div>
+  <div class="stat">
+    <div class="label">Realised P&L</div>
+    <div class="value green" id="pnl">₹0</div>
+  </div>
+  <div class="stat">
+    <div class="label">Unrealised P&L</div>
+    <div class="value gray" id="open_pnl">₹0</div>
+  </div>
+</div>
+
+<div class="stats2">
+  <div class="stat2">
+    <div class="label">Total Trades</div>
+    <div class="value gray" id="total_trades">0</div>
+  </div>
+  <div class="stat2">
+    <div class="label">Win Rate</div>
+    <div class="value green" id="win_rate">0%</div>
+    <div class="win-bar-wrap"><div class="win-bar" id="win-bar" style="width:0%"></div></div>
+  </div>
+  <div class="stat2">
+    <div class="label">Wins / Losses</div>
+    <div class="value" id="wins_losses">0 / 0</div>
+  </div>
+  <div class="stat2">
+    <div class="label">Return</div>
+    <div class="value gray" id="return_pct">0%</div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="box">
+    <div class="box-title">
+      Watchlist — RSI Scanner
+      <span id="wl-count" style="font-size:11px;color:#94a3b8;"></span>
+    </div>
+    <table>
+      <thead><tr><th>Symbol</th><th>Price</th><th>RSI</th><th>Signal</th></tr></thead>
+      <tbody id="watchlist-body">
+        <tr><td colspan="4" class="empty-msg">Waiting for scan...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box">
+    <div class="box-title">
+      Open Positions
+      <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span>
+    </div>
+    <table>
+      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th></tr></thead>
+      <tbody id="positions-body">
+        <tr><td colspan="5" class="empty-msg">No open positions</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid1">
+  <div class="box">
+    <div class="box-title">Trade Log (Last 20)</div>
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Time</th><th>Symbol</th><th>Action</th>
+        <th>Price</th><th>Qty</th><th>RSI</th><th>P&L</th><th>Reason</th>
+      </tr></thead>
+      <tbody id="trade-log">
+        <tr><td colspan="9" class="empty-msg">No trades yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const socket = io();
+  setInterval(() => {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-IN');
+  }, 1000);
+
+  function fmt(n) {
+    return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
+  }
+  function colorVal(el, val) {
+    el.className = 'value ' + (val > 0 ? 'green' : val < 0 ? 'red' : 'gray');
+  }
+
+  socket.on('state_update', (d) => {
+    document.getElementById('capital').textContent       = fmt(d.capital || 0);
+    document.getElementById('portfolio_val').textContent = fmt(d.portfolio_val || d.capital || 0);
+
+    const pnlEl = document.getElementById('pnl');
+    pnlEl.textContent = fmt(d.pnl || 0);
+    colorVal(pnlEl, d.pnl || 0);
+
+    const opEl = document.getElementById('open_pnl');
+    opEl.textContent = fmt(d.open_pnl || 0);
+    colorVal(opEl, d.open_pnl || 0);
+
+    const retEl = document.getElementById('return_pct');
+    retEl.textContent = (d.return_pct || 0) + '%';
+    colorVal(retEl, d.return_pct || 0);
+
+    document.getElementById('total_trades').textContent = d.total_trades || 0;
+    document.getElementById('win_rate').textContent     = (d.win_rate || 0) + '%';
+    document.getElementById('wins_losses').textContent  = (d.wins||0) + ' / ' + (d.losses||0);
+    document.getElementById('win-bar').style.width      = Math.min(d.win_rate||0, 100) + '%';
+
+    // Watchlist
+    const wl    = d.watchlist || {};
+    const wkeys = Object.keys(wl);
+    document.getElementById('wl-count').textContent = wkeys.length + ' stocks';
+    let whtml = '';
+    for (const [sym, v] of Object.entries(wl)) {
+      const rsiColor = v.rsi < 30 ? '#16a34a' : v.rsi > 70 ? '#dc2626' : '#64748b';
+      const rsiPct   = Math.min(v.rsi, 100);
+      const bClass   = v.signal === 'BUY'  ? 'badge-buy'
+                     : v.signal === 'SELL' ? 'badge-sell' : 'badge-hold';
+      const priceStr = v.price ? fmt(v.price) : '—';
+      whtml += `<tr>
+        <td style="font-weight:500;">${sym.replace('.NS','').replace('=X','').replace('=F','')}</td>
+        <td>${priceStr}</td>
+        <td>
+          <span style="color:${rsiColor};font-weight:600;margin-right:5px;">${Number(v.rsi).toFixed(1)}</span>
+          <span class="rsi-bar-wrap">
+            <span class="rsi-bar" style="width:${rsiPct}%;background:${rsiColor};"></span>
+          </span>
+        </td>
+        <td><span class="badge ${bClass}">${v.signal}</span></td>
+      </tr>`;
+    }
+    document.getElementById('watchlist-body').innerHTML =
+      whtml || '<tr><td colspan="4" class="empty-msg">Waiting for scan...</td></tr>';
+
+    // Open Positions
+    const pos   = d.positions || {};
+    const pkeys = Object.keys(pos);
+    document.getElementById('pos-count').textContent = pkeys.length ? pkeys.length + ' open' : '';
+    let phtml = '';
+    for (const [sym, p] of Object.entries(pos)) {
+      const ltp    = p.current_price || p.buy_price;
+      const upnl   = ((ltp - p.buy_price) * p.qty).toFixed(2);
+      const upnlColor = upnl >= 0 ? '#16a34a' : '#dc2626';
+      phtml += `<tr>
+        <td style="font-weight:500;">${sym.replace('.NS','')}</td>
+        <td>${p.qty}</td>
+        <td>${fmt(p.buy_price)}</td>
+        <td>${fmt(ltp)}</td>
+        <td style="color:${upnlColor};font-weight:600;">₹${Number(upnl).toLocaleString('en-IN')}</td>
+      </tr>`;
+    }
+    document.getElementById('positions-body').innerHTML =
+      phtml || '<tr><td colspan="5" class="empty-msg">No open positions</td></tr>';
+
+    // Trade Log
+    const trades = [...(d.trades || [])].reverse().slice(0, 20);
+    let thtml = '';
+    trades.forEach(t => {
+      const hasPnl = t.pnl != null && t.pnl !== '';
+      const pnlStr = hasPnl
+        ? `<span style="color:${t.pnl>=0?'#16a34a':'#dc2626'};font-weight:600;">₹${Number(t.pnl).toLocaleString('en-IN')}</span>`
+        : '—';
+      const bClass = t.action === 'BUY' ? 'badge-buy' : 'badge-sell';
+      thtml += `<tr>
+        <td style="color:#94a3b8;font-size:12px;">${t.date || ''}</td>
+        <td style="color:#94a3b8;font-size:12px;">${t.time || ''}</td>
+        <td style="font-weight:500;">${String(t.symbol||'').replace('.NS','')}</td>
+        <td><span class="badge ${bClass}">${(t.action||'').toUpperCase()}</span></td>
+        <td>${fmt(t.price || 0)}</td>
+        <td>${t.qty || 0}</td>
+        <td style="color:#64748b;">${Number(t.rsi||0).toFixed(1)}</td>
+        <td>${pnlStr}</td>
+        <td style="color:#94a3b8;font-size:12px;">${t.reason || ''}</td>
+      </tr>`;
+    });
+    document.getElementById('trade-log').innerHTML =
+      thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
+  });
+</script>
+</body>
+</html>
+"""
+
+
+@app.route("/portfolio")
+def portfolio():
+    raw_positions = bot_state.get("positions", {})
+    pos_list = []
+    if isinstance(raw_positions, dict):
+        for sym, p in raw_positions.items():
+            invested = p.get("buy_price", 0) * p.get("qty", 0)
+            current_val = p.get("current_price", 0) * p.get("qty", 0)
+            pnl = current_val - invested
+            pos_list.append({
+                "symbol": sym.replace(".NS", "").replace("-USD", ""),
+                "full_symbol": sym,
+                "itype": p.get("itype", "STOCK"),
+                "buy_time": p.get("buy_time", ""),
+                "qty": p.get("qty", 0),
+                "buy_price": p.get("buy_price", 0),
+                "current_price": p.get("current_price", 0),
+                "invested": invested,
+                "current_value": current_val,
+                "pnl": pnl,
+                "pnl_pct": (pnl / invested * 100) if invested else 0,
+                "stop_loss": p.get("stop_loss", 0),
+            })
+    capital = bot_state.get("capital", 0)
+    portfolio_val = bot_state.get("portfolio_val", capital)
+    return jsonify({
+        "capital": capital,
+        "portfolio_value": portfolio_val,
+        "unrealised_pnl": sum((p.get("current_price",0) - p.get("buy_price",0)) * p.get("qty",0) for p in raw_positions.values()) if isinstance(raw_positions, dict) else bot_state.get("unrealised_pnl", 0),
+        "realised_pnl": bot_state.get("realised_pnl", 0),
+        "total_return_pct": bot_state.get("return_pct", 0),
+        "win_rate": bot_state.get("win_rate", 0),
+        "total_trades": bot_state.get("total_trades", 0),
+        "wins": bot_state.get("wins", 0),
+        "losses": bot_state.get("losses", 0),
+        "last_updated": bot_state.get("last_updated", ""),
+        "positions": pos_list,
+    })
+
+@app.route("/watchlist")
+def watchlist():
+    raw = bot_state.get("watchlist", [])
+    wlist = []
+    if isinstance(raw, dict):
+        for sym, w in raw.items():
+            wlist.append({
+                "symbol": sym.replace(".NS","").replace("-USD",""),
+                "full_symbol": sym,
+                "signal": w.get("signal", "HOLD"),
+                "price": w.get("price", 0),
+                "rsi": w.get("rsi", 50),
+            })
+    elif isinstance(raw, list):
+        wlist = raw
+    return jsonify({"watchlist": wlist, "scanned_at": bot_state.get("scanned_at", "")})
+
+@app.route("/alerts")
+def alerts():
+    return jsonify({"alerts": bot_state.get("alerts", [])})
+
+@app.route("/status")
+def status():
+    return jsonify({"status": "running", "connected": True})
+
+@app.route("/trades")
+def trades():
+    return jsonify({"trades": bot_state.get("trade_log", [])})
+
+@app.route("/buy", methods=["POST"])
+def buy():
+    return jsonify({"status": "ok", "message": "Manual buy not supported in paper mode"})
+
+@app.route("/sell", methods=["POST"])
+def sell():
+    return jsonify({"status": "ok", "message": "Manual sell not supported in paper mode"})
+
+
+@app.route('/')
+def index():
+    return render_template_string(DASHBOARD_HTML)
+
+def push_updates():
+    """Push live state to all connected browsers every 5 seconds."""
+    while True:
+        socketio.emit('state_update', bot_state)
+        time.sleep(5)
+
+def start_dashboard():
+    import logging
+    import os
+    
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+    logging.getLogger('socketio').setLevel(logging.ERROR)   # ← ADD
+    logging.getLogger('engineio').setLevel(logging.ERROR)   # ← ADD
+    threading.Thread(target=push_updates, daemon=True).start()
+    socketio.run(app, host='0.0.0.0', port=5000, log_output=False, debug=False, allow_unsafe_werkzeug=True)
