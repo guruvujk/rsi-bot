@@ -63,6 +63,11 @@ def save_state(trader: PaperTrader):
         }
         with open(STATE_FILE, "w") as f:
             json.dump(data, f, indent=2, default=str)
+        try:
+            from db_state import save_state as db_save
+            db_save(data)
+        except Exception as db_err:
+            print(f"  [DB] Save failed: {db_err}")
     except Exception as e:
         print(f"  [State] Save failed: {e}")
 
@@ -79,6 +84,18 @@ def save_trade(trade):
 
 
 def load_state(trader: PaperTrader):
+    try:
+        from db_state import load_state as db_load, init_db
+        init_db()
+        data = db_load()
+        if data:
+            trader.capital   = float(data.get("capital", CAPITAL))
+            trader.positions = data.get("positions", {})
+            trader.trades    = data.get("trades", [])
+            print(f"  [State] Restored from DB")
+            return
+    except Exception as e:
+        print(f"  [DB] {e}")
     if not os.path.exists(STATE_FILE):
         return
     try:
