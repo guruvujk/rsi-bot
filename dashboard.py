@@ -404,6 +404,13 @@ def buy():
 @app.route("/sell", methods=["POST"])
 def sell():
     return jsonify({"status": "ok", "message": "Manual sell not supported in paper mode"})
+@app.route("/download/trades")
+def download_trades():
+    from flask import send_file
+    import os
+    if os.path.exists("logs/Trading_Journal.xlsx"):
+        return send_file("logs/trades.xlsx", as_attachment=True)
+    return "No trades yet", 404
 
 
 @app.route('/')
