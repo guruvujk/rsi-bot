@@ -411,7 +411,8 @@ def download_trades():
     try:
         from db_state import load_trades
         trades = load_trades()
-    except:
+    except Exception as ex:
+        print(f"[Excel] load_trades error: {ex}")
         trades = []
     wb = openpyxl.Workbook()
     ws = wb.active
