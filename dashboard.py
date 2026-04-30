@@ -472,6 +472,29 @@ def upload_state():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/upload_state", methods=["POST"])
+def upload_state():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data"}), 400
+        if "capital" in data:
+            bot_state["capital"] = data["capital"]
+        if "positions" in data:
+            bot_state["positions"] = data["positions"]
+        if "trades" in data:
+            bot_state["trades"] = data["trades"]
+        try:
+            from db_state import save_state as db_save
+            db_save(bot_state)
+            print(f"[Upload] State saved to DB: capital={data.get('capital')}, trades={len(data.get('trades',[]))}")
+        except Exception as e:
+            print(f"[Upload] DB save error: {e}")
+        return jsonify({"status": "ok", "trades": len(data.get("trades", []))})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/')
 def index():
     return render_template_string(DASHBOARD_HTML)
