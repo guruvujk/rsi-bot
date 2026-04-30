@@ -404,29 +404,50 @@ def buy():
 @app.route("/sell", methods=["POST"])
 def sell():
     return jsonify({"status": "ok", "message": "Manual sell not supported in paper mode"})
+
 @app.route("/download/trades")
 def download_trades():
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
     from flask import send_file
-    import openpyxl, io
     try:
-        from db_state import load_trades
-        trades = load_trades()
-    except Exception as ex:
-        print(f"[Excel] load_trades error: {ex}")
-        trades = []
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Trading Journal"
-    ws.append(["Date","Time","Symbol","Action","Price","Qty","RSI","P&L","Reason"])
-    for t in trades:
-        ws.append([t["date"],t["time"],t["symbol"],t["action"],
-                   t["price"],t["qty"],t["rsi"],t["pnl"],t["reason"]])
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    return send_file(buf, as_attachment=True,
-                     download_name="Trading_Journal.xlsx",
-                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        trades = bot_state.get("trades", [])
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Trade History"
+
+        if trades:
+            headers = list(trades[0].keys())
+            ws.append(headers)
+            # Style header row
+            for cell in ws[1]:
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill("solid", fgColor="1a2135")
+                cell.alignment = Alignment(horizontal="center")
+            for t in trades:
+                ws.append([t.get(h, "") for h in headers])
+        else:
+            ws.append(["No trades recorded yet"])
+            ws.append(["Trades will appear here after the bot executes BUY/SELL orders"])
+
+        # Auto-width columns
+        for col in ws.columns:
+            max_len = max((len(str(cell.value or "")) for cell in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        return send_file(
+            buf,
+            download_name="RSI_Bot_Trades.xlsx",
+            as_attachment=True,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    except Exception as e:
+        print(f"[Excel] download error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/')
 def index():
