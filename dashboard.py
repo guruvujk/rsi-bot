@@ -407,11 +407,25 @@ def sell():
 @app.route("/download/trades")
 def download_trades():
     from flask import send_file
-    import os
-    if os.path.exists("logs/Trading_Journal.xlsx"):
-        return send_file("logs/trades.xlsx", as_attachment=True)
-    return "No trades yet", 404
-
+    import openpyxl, io
+    try:
+        from db_state import load_trades
+        trades = load_trades()
+    except:
+        trades = []
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Trading Journal"
+    ws.append(["Date","Time","Symbol","Action","Price","Qty","RSI","P&L","Reason"])
+    for t in trades:
+        ws.append([t["date"],t["time"],t["symbol"],t["action"],
+                   t["price"],t["qty"],t["rsi"],t["pnl"],t["reason"]])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True,
+                     download_name="Trading_Journal.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 @app.route('/')
 def index():
