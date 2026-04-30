@@ -336,7 +336,8 @@ def portfolio():
     if isinstance(raw_positions, dict):
         for sym, p in raw_positions.items():
             invested = p.get("buy_price", 0) * p.get("qty", 0)
-            current_val = p.get("current_price", 0) * p.get("qty", 0)
+            cur_px = p.get("current_price") or p.get("buy_price", 0)
+            current_val = cur_px * p.get("qty", 0)
             pnl = current_val - invested
             pos_list.append({
                 "symbol": sym.replace(".NS", "").replace("-USD", ""),
@@ -345,7 +346,7 @@ def portfolio():
                 "buy_time": p.get("buy_time", ""),
                 "qty": p.get("qty", 0),
                 "buy_price": p.get("buy_price", 0),
-                "current_price": p.get("current_price", 0),
+                "current_price": p.get("current_price") or p.get("buy_price", 0),
                 "invested": invested,
                 "current_value": current_val,
                 "pnl": pnl,
@@ -395,7 +396,8 @@ def status():
 
 @app.route("/trades")
 def trades():
-    return jsonify({"trades": bot_state.get("trade_log", [])})
+    t = bot_state.get("trades", bot_state.get("trade_log", []))
+    return jsonify({"trades": t})
 
 @app.route("/buy", methods=["POST"])
 def buy():
