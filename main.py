@@ -48,7 +48,7 @@ def speak_alert(message: str, voice: str = "Raj"):
             timeout=5
         )
     except Exception as e:
-        print(f"  [Voice] Alert failed (is Voice Studio running?): {e}")
+        pass  # Voice Studio only runs on local PC
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -81,6 +81,11 @@ def save_trade(trade):
         if write_header:
             w.writeheader()
         w.writerow(trade)
+    try:
+        from db_state import save_trade as db_save_trade
+        db_save_trade(trade)
+    except Exception as e:
+        print(f"  [DB] Trade log error: {e}")
 
 
 def load_state(trader: PaperTrader):
@@ -368,6 +373,7 @@ def scan_symbol(symbol, current_prices):
                         'reason': reason,
                     }
                     save_trade(trade)
+from excel_log import log_trade; log_trade(trade)
 
         # ── ENTRY logic ───────────────────────────────────────────────────
         elif (signal == "BUY"
@@ -441,6 +447,7 @@ def scan_symbol(symbol, current_prices):
                 }
                 trades.append(trade)
                 save_trade(trade)
+from excel_log import log_trade; log_trade(trade)
 
     except Exception as e:
         print(f"  [Error] {format_symbol(symbol)}: {e}")
