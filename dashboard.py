@@ -329,6 +329,7 @@ DASHBOARD_HTML = """
 """
 
 
+
 @app.route("/portfolio")
 def portfolio():
     raw_positions = bot_state.get("positions", {})
@@ -340,32 +341,32 @@ def portfolio():
             current_val = cur_px * p.get("qty", 0)
             pnl = current_val - invested
             pos_list.append({
-                "symbol": sym.replace(".NS", "").replace("-USD", ""),
+                "symbol": sym.replace(".NS","").replace("-USD",""),
                 "full_symbol": sym,
-                "itype": p.get("itype", "STOCK"),
-                "buy_time": p.get("buy_time", ""),
-                "qty": p.get("qty", 0),
-                "buy_price": p.get("buy_price", 0),
-                "current_price": p.get("current_price") or p.get("buy_price", 0),
+                "itype": p.get("itype","STOCK"),
+                "buy_time": p.get("buy_time",""),
+                "qty": p.get("qty",0),
+                "buy_price": p.get("buy_price",0),
+                "current_price": cur_px,
                 "invested": invested,
                 "current_value": current_val,
                 "pnl": pnl,
-                "pnl_pct": (pnl / invested * 100) if invested else 0,
-                "stop_loss": p.get("stop_loss", 0),
+                "pnl_pct": (pnl/invested*100) if invested else 0,
+                "stop_loss": p.get("stop_loss",0),
             })
     capital = bot_state.get("capital", 0)
     portfolio_val = bot_state.get("portfolio_val", capital)
     return jsonify({
         "capital": capital,
         "portfolio_value": portfolio_val,
-        "unrealised_pnl": sum((p.get("current_price",0) - p.get("buy_price",0)) * p.get("qty",0) for p in raw_positions.values()) if isinstance(raw_positions, dict) else bot_state.get("unrealised_pnl", 0),
+        "unrealised_pnl": sum((p.get("current_price") or p.get("buy_price",0) - p.get("buy_price",0)) * p.get("qty",0) for p in raw_positions.values()) if isinstance(raw_positions, dict) else 0,
         "realised_pnl": bot_state.get("realised_pnl", 0),
         "total_return_pct": bot_state.get("return_pct", 0),
         "win_rate": bot_state.get("win_rate", 0),
         "total_trades": bot_state.get("total_trades", 0),
         "wins": bot_state.get("wins", 0),
         "losses": bot_state.get("losses", 0),
-        "last_updated": bot_state.get("last_updated", ""),
+        "last_updated": bot_state.get("last_updated",""),
         "positions": pos_list,
     })
 
@@ -378,13 +379,13 @@ def watchlist():
             wlist.append({
                 "symbol": sym.replace(".NS","").replace("-USD",""),
                 "full_symbol": sym,
-                "signal": w.get("signal", "HOLD"),
-                "price": w.get("price", 0),
-                "rsi": w.get("rsi", 50),
+                "signal": w.get("signal","HOLD"),
+                "price": w.get("price",0),
+                "rsi": w.get("rsi",50),
             })
     elif isinstance(raw, list):
         wlist = raw
-    return jsonify({"watchlist": wlist, "scanned_at": bot_state.get("scanned_at", "")})
+    return jsonify({"watchlist": wlist, "scanned_at": bot_state.get("scanned_at","")})
 
 @app.route("/alerts")
 def alerts():
@@ -407,6 +408,27 @@ def buy():
 def sell():
     return jsonify({"status": "ok", "message": "Manual sell not supported in paper mode"})
 
+@app.route("/api/upload_state", methods=["POST"])
+def upload_state():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data"}), 400
+        for key in ["capital", "positions", "trades"]:
+            if key in data:
+                bot_state[key] = data[key]
+        if "trades" in data:
+            bot_state["trade_log"] = data["trades"]
+        try:
+            from db_state import save_state as db_save
+            db_save(dict(bot_state))
+            print(f"[Upload] Synced: capital={data.get('capital')}, trades={len(data.get('trades',[]))}, positions={len(data.get('positions',{}))}")
+        except Exception as e:
+            print(f"[Upload] DB error: {e}")
+        return jsonify({"status":"ok","trades":len(data.get("trades",[])),"positions":len(data.get("positions",{}))})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/download/trades")
 def download_trades():
     import io
@@ -414,145 +436,32 @@ def download_trades():
     from openpyxl.styles import Font, PatternFill, Alignment
     from flask import send_file
     try:
-        trades = bot_state.get("trades", [])
+        trades = bot_state.get("trades", bot_state.get("trade_log", []))
         wb = Workbook()
         ws = wb.active
         ws.title = "Trade History"
-
         if trades:
             headers = list(trades[0].keys())
             ws.append(headers)
-            # Style header row
             for cell in ws[1]:
                 cell.font = Font(bold=True, color="FFFFFF")
                 cell.fill = PatternFill("solid", fgColor="1a2135")
                 cell.alignment = Alignment(horizontal="center")
             for t in trades:
-                ws.append([t.get(h, "") for h in headers])
+                ws.append([t.get(h,"") for h in headers])
         else:
             ws.append(["No trades recorded yet"])
-            ws.append(["Trades will appear here after the bot executes BUY/SELL orders"])
-
-        # Auto-width columns
         for col in ws.columns:
             max_len = max((len(str(cell.value or "")) for cell in col), default=10)
-            ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
-
+            ws.column_dimensions[col[0].column_letter].width = min(max_len+4, 40)
         buf = io.BytesIO()
         wb.save(buf)
         buf.seek(0)
-        return send_file(
-            buf,
-            download_name="RSI_Bot_Trades.xlsx",
-            as_attachment=True,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        return send_file(buf, download_name="RSI_Bot_Trades.xlsx", as_attachment=True,
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     except Exception as e:
-        print(f"[Excel] download error: {e}")
+        print(f"[Excel] error: {e}")
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/upload_state", methods=["POST"])
-def upload_state():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data"}), 400
-        if "capital" in data:
-            bot_state["capital"] = data["capital"]
-        if "positions" in data:
-            bot_state["positions"] = data["positions"]
-        if "trades" in data:
-            bot_state["trades"] = data["trades"]
-        try:
-            from db_state import save_state as db_save
-            db_save(bot_state)
-            print(f"[Upload] State saved to DB: capital={data.get('capital')}, trades={len(data.get('trades',[]))}")
-        except Exception as e:
-            print(f"[Upload] DB save error: {e}")
-        return jsonify({"status": "ok", "trades": len(data.get("trades", []))})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/upload_state", methods=["POST"])
-def upload_state():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data"}), 400
-        if "capital" in data:
-            bot_state["capital"] = data["capital"]
-        if "positions" in data:
-            bot_state["positions"] = data["positions"]
-        if "trades" in data:
-            bot_state["trades"] = data["trades"]
-        try:
-            from db_state import save_state as db_save
-            db_save(bot_state)
-            print(f"[Upload] State saved to DB: capital={data.get('capital')}, trades={len(data.get('trades',[]))}")
-        except Exception as e:
-            print(f"[Upload] DB save error: {e}")
-        return jsonify({"status": "ok", "trades": len(data.get("trades", []))})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/upload_state", methods=["POST"])
-def upload_state():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data"}), 400
-        if "capital" in data:
-            bot_state["capital"] = data["capital"]
-        if "positions" in data:
-            bot_state["positions"] = data["positions"]
-        if "trades" in data:
-            bot_state["trades"] = data["trades"]
-        try:
-            from db_state import save_state as db_save
-            db_save(bot_state)
-            print(f"[Upload] State saved to DB: capital={data.get('capital')}, trades={len(data.get('trades',[]))}")
-        except Exception as e:
-            print(f"[Upload] DB save error: {e}")
-        return jsonify({"status": "ok", "trades": len(data.get("trades", []))})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/upload_state", methods=["POST"])
-def upload_state():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data"}), 400
-        if "capital" in data:
-            bot_state["capital"] = data["capital"]
-        if "positions" in data:
-            bot_state["positions"] = data["positions"]
-        if "trades" in data:
-            bot_state["trades"] = data["trades"]
-        try:
-            from db_state import save_state as db_save
-            db_save(bot_state)
-            print(f"[Upload] State saved to DB: capital={data.get('capital')}, trades={len(data.get('trades',[]))}")
-        except Exception as e:
-            print(f"[Upload] DB save error: {e}")
-        return jsonify({"status": "ok", "trades": len(data.get("trades", []))})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/debug/state")
-def debug_state():
-    return jsonify({
-        "keys": list(bot_state.keys()),
-        "trades_count": len(bot_state.get("trades", [])),
-        "trade_log_count": len(bot_state.get("trade_log", [])),
-        "capital": bot_state.get("capital", 0),
-        "positions_count": len(bot_state.get("positions", {})),
-    })
 
 @app.route('/')
 def index():
