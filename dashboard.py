@@ -25,6 +25,17 @@ except Exception as _e:
     print(f"[Dashboard] DB load error: {_e}")
     _saved = None
 
+# Load from PostgreSQL on startup
+try:
+    from db_state import load_state as _db_load, init_db as _init_db
+    _init_db()
+    _saved = _db_load()
+    if _saved:
+        print(f"[Dashboard] Loaded from DB: capital={_saved.get('capital')}, positions={len(_saved.get('positions',{}))}, trades={len(_saved.get('trades',[]))}")
+except Exception as _e:
+    print(f"[Dashboard] DB load error: {_e}")
+    _saved = None
+
 bot_state = {
     "capital"      : 100000,
     "positions"    : 0,
