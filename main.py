@@ -373,7 +373,7 @@ def scan_symbol(symbol, current_prices):
                         'reason': reason,
                     }
                     save_trade(trade)
-from excel_log import log_trade; log_trade(trade)
+
 
         # ── ENTRY logic ───────────────────────────────────────────────────
         elif (signal == "BUY"
@@ -447,7 +447,7 @@ from excel_log import log_trade; log_trade(trade)
                 }
                 trades.append(trade)
                 save_trade(trade)
-from excel_log import log_trade; log_trade(trade)
+
 
     except Exception as e:
         print(f"  [Error] {format_symbol(symbol)}: {e}")
