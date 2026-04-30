@@ -40,7 +40,12 @@ SKIP_SYMBOLS = {"POL-USD", "UNI-USD", "ARB-USD", "ARB/USD", "BTC-INR", "ETH-INR"
 # ─────────────────────────────────────────────────────────────────────────────
 # Voice Alert — JKRAO Voice Studio
 # ─────────────────────────────────────────────────────────────────────────────
+import os
+VOICE_ENABLED = os.environ.get("VOICE_ENABLED", "false").lower() == "true"
+
 def speak_alert(message: str, voice: str = "Raj"):
+    if not VOICE_ENABLED:
+        return  # Skip on cloud — use Telegram instead
     try:
         requests.post(
             "http://localhost:8080/api/alert",
