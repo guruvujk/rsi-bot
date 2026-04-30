@@ -643,7 +643,7 @@ if __name__ == "__main__":
         f"Instruments: {len(WATCHLIST)}\n"
         f"Markets    : {', '.join(active_names)}\n"
         f"Mode       : 📄 Paper Trading\n"
-        f"Dashboard  : http://localhost:5000\n\n"
+        f"Dashboard  : https://rsi-bot-4yu1.onrender.com\n\n"
         f"Adaptive SL: Forex 0.8% | Stocks 2% | Crypto 4%\n"
         f"Max/trade  : ₹{MAX_CAPITAL_PER_TRADE:,}",
         "START"
