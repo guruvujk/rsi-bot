@@ -415,7 +415,7 @@ def scan_symbol(symbol, current_prices):
                       f" (need ₹{cost:,.0f}, have ₹{pt.capital:,.0f})")
                 return
 
-            ok, msg = pt.buy(symbol, price, qty, rsi_val,
+            ok, msg = pt.buy(symbol, price_inr, qty, rsi_val,
                              sl_pct, tp_pct, itype=itype)
             if ok:
                 sl_price = price * (1 - sl_pct)
@@ -443,10 +443,10 @@ def scan_symbol(symbol, current_prices):
                       f" | SL:{sl_pct*100:.1f}% TP:{tp_pct*100:.1f}%")
 
                 trade = {
-                    'time'  : datetime.now().strftime('%H:%M'),
+                    'time'  : datetime.now(IST).strftime('%H:%M'),
                     'symbol': symbol,
                     'action': 'BUY',
-                    'price' : round(price, 4),
+                    'price' : round(price_inr, 2),
                     'qty'   : qty,
                     'rsi'   : rsi_val,
                     'pnl'   : None,
