@@ -543,6 +543,17 @@ def upload_state():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/debug/state")
+def debug_state():
+    return jsonify({
+        "keys": list(bot_state.keys()),
+        "trades_count": len(bot_state.get("trades", [])),
+        "trade_log_count": len(bot_state.get("trade_log", [])),
+        "capital": bot_state.get("capital", 0),
+        "positions_count": len(bot_state.get("positions", {})),
+    })
+
 @app.route('/')
 def index():
     return render_template_string(DASHBOARD_HTML)
