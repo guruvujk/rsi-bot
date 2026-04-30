@@ -4,3 +4,12 @@ __pycache__/
 .env
 trading.db
 
+
+fix_*.py
+check_*.py
+init_*.py
+test_*.py
+upload_*.py
+dedup_*.py
+*.backup
+test_journal.xlsx
