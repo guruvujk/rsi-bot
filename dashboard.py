@@ -432,6 +432,28 @@ def sell():
 
 
 
+
+@app.route("/api/upload_state", methods=["POST"])
+def upload_state():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data"}), 400
+        for key in ["capital", "positions", "trades"]:
+            if key in data:
+                bot_state[key] = data[key]
+        if "trades" in data:
+            bot_state["trade_log"] = data["trades"]
+        try:
+            from db_state import save_state as db_save
+            db_save(dict(bot_state))
+            print(f"[Upload] Synced: capital={data.get('capital')}, positions={len(data.get('positions',{}))}")
+        except Exception as e:
+            print(f"[Upload] DB error: {e}")
+        return jsonify({"status":"ok","trades":len(data.get("trades",[])),"positions":len(data.get("positions",{}))})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/download/trades")
 def download_trades():
     import io
