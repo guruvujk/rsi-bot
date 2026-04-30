@@ -363,15 +363,17 @@ def scan_symbol(symbol, current_prices):
                     )
                     print(f"    → PAPER SELL | {reason} | P&L ₹{pnl:,.2f}")
                     trade = {
-                        'time'  : datetime.now().strftime('%H:%M'),
+                        'time'  : datetime.now(IST).strftime('%H:%M'),
                         'symbol': symbol,
                         'action': 'SELL',
                         'price' : price,
                         'qty'   : pos['qty'],
                         'rsi'   : rsi_val,
-                        'pnl'   : pnl,
+                        'pnl'   : round(pnl, 2),
                         'reason': reason,
+                        'date'  : datetime.now(IST).strftime('%d-%b-%Y'),
                     }
+                    trades.append(trade)
                     save_trade(trade)
 
 
@@ -444,6 +446,8 @@ def scan_symbol(symbol, current_prices):
                     'rsi'   : rsi_val,
                     'pnl'   : None,
                     'reason': 'RSI BUY',
+                    'date'  : datetime.now(IST).strftime('%d-%b-%Y'),
+                    'symbol': symbol,
                 }
                 trades.append(trade)
                 save_trade(trade)
