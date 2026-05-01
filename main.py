@@ -62,10 +62,17 @@ def speak_alert(message: str, voice: str = "Raj"):
 # ─────────────────────────────────────────────────────────────────────────────
 def save_state(trader: PaperTrader):
     try:
+        stats = trader.stats()
         data = {
-            "capital"  : trader.capital,
-            "positions": trader.positions,
-            "trades"   : trader.trades,
+            "capital"      : trader.capital,
+            "positions"    : trader.positions,
+            "trades"       : trader.trades,
+            "total_trades" : stats.get("total_trades", 0),
+            "wins"         : stats.get("wins", 0),
+            "losses"       : stats.get("losses", 0),
+            "win_rate"     : stats.get("win_rate", 0),
+            "realised_pnl" : stats.get("total_pnl", 0),
+            "return_pct"   : stats.get("return_pct", 0),
         }
         with open(STATE_FILE, "w") as f:
             json.dump(data, f, indent=2, default=str)
