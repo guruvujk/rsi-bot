@@ -2,6 +2,7 @@ import psycopg2, json, os
 from datetime import datetime
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+print(f"[DB] DATABASE_URL set: {bool(DATABASE_URL)}")
 
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
@@ -29,9 +30,11 @@ def init_db():
             rsi REAL,
             pnl REAL,
             reason TEXT,
+            itype TEXT DEFAULT 'STOCK',
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
+    cur.execute("ALTER TABLE trades ADD COLUMN IF NOT EXISTS itype TEXT DEFAULT 'STOCK'")
     conn.commit()
     cur.close()
     conn.close()
@@ -64,7 +67,11 @@ def load_state():
         cur.close()
         conn.close()
         if row:
-            return json.loads(row[0])
+            val = row[0]
+            # Handle both string and dict (jsonb auto-parsed by psycopg2)
+            if isinstance(val, dict):
+                return val
+            return json.loads(val)
     except Exception as e:
         print(f"[DB] Load error: {e}")
     return None
@@ -75,9 +82,11 @@ def save_trade(trade):
     try:
         conn = get_conn()
         cur = conn.cursor()
+        pnl_val = trade.get("pnl")
+        pnl_val = float(pnl_val) if pnl_val not in (None, "", "—") else 0.0
         cur.execute("""
-            INSERT INTO trades (date, time, symbol, action, price, qty, rsi, pnl, reason)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO trades (date, time, symbol, action, price, qty, rsi, pnl, reason, itype)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             datetime.now().strftime("%d-%b-%Y"),
             trade.get("time", ""),
@@ -86,8 +95,9 @@ def save_trade(trade):
             trade.get("price", 0),
             trade.get("qty", 0),
             round(trade.get("rsi", 0), 1),
-            trade.get("pnl") if trade.get("pnl") is not None else 0,
+            pnl_val,
             trade.get("reason", ""),
+            trade.get("itype", "STOCK"),
         ))
         conn.commit()
         cur.close()
@@ -101,12 +111,23 @@ def load_trades():
     try:
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT date, time, symbol, action, price, qty, rsi, pnl, reason FROM trades ORDER BY created_at")
+        cur.execute("SELECT date, time, symbol, action, price, qty, rsi, pnl, reason, itype FROM trades ORDER BY created_at")
         rows = cur.fetchall()
         cur.close()
         conn.close()
-        return [{"date":r[0],"time":r[1],"symbol":r[2],"action":r[3],
-                 "price":r[4],"qty":r[5],"rsi":r[6],"pnl":r[7],"reason":r[8]} for r in rows]
+        return [{
+            "date"      : r[0],
+            "time"      : r[1], 
+            "symbol"    : r[2],
+            "action"    : r[3],
+            "buy_price" : r[4] if r[3] == "BUY" else "",
+            "sell_price": r[4] if r[3] == "SELL" else "",
+            "qty"       : r[5],
+            "rsi"       : r[6],
+            "pnl"       : r[7] if r[3] == "SELL" else "",
+            "reason"    : r[8],
+            "itype"     : r[9] if len(r) > 9 else "STOCK",
+        } for r in rows]
     except Exception as e:
         print(f"[DB] Load trades error: {e}")
         return []
