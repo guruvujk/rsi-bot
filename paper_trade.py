@@ -457,6 +457,7 @@ class PaperTrader:
             "bb_pct"    : round(ind.get("bb_pct", 0), 2),
             "reason"    : "RSI BUY",
         }
+        self.trades.append(row)
         # Log to CSV + Excel only (no external API calls)
         self._log_csv(row)
         self._log_excel_trade(row)
@@ -486,6 +487,7 @@ class PaperTrader:
             "symbol"    : symbol,
             "itype"     : itype,
             "action"    : "SELL",
+            "price"     : round(price, 4),
             "buy_price" : pos["buy_price"],
             "sell_price": round(price, 4),
             "qty"       : qty,
@@ -580,7 +582,7 @@ class PaperTrader:
             "open_pnl"     : round(self.open_pnl, 2),
             "capital"      : round(self.capital, 2),
             "portfolio_val": round(self.capital + self.open_pnl, 2),
-            "return_pct"  : round((self.open_pnl / self.initial_capital) * 100, 2),
+            "return_pct"  : round(((self.capital - self.initial_capital + self.open_pnl) / self.initial_capital) * 100, 2),
         }
 
     # ── CSV LOG ───────────────────────────────────────────────────────────────
