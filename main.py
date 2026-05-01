@@ -282,20 +282,21 @@ def sync_dashboard():
     state['wins']          = stats['wins']
     state['losses']        = stats['losses']
     from config import get_usd_inr_rate
-rate = get_usd_inr_rate()
-state['positions'] = {}
-for s, p in pt.positions.items():
-    raw_price = state.get('watchlist', {}).get(s, {}).get('price', p['buy_price'])
-    itype = get_instrument_type(s)
-    current_inr = raw_price * rate if "-USD" in s else raw_price
-    pnl = round((current_inr - p['buy_price']) * p['qty'], 2)
-    state['positions'][s] = {
-        **p,
-        'current_price': current_inr,
-        'pnl': pnl,
-        'type': itype
-    }
+    rate = get_usd_inr_rate()
+    state['positions'] = {}
+    for s, p in pt.positions.items():
+        raw_price = state.get('watchlist', {}).get(s, {}).get('price', p['buy_price'])
+        itype = get_instrument_type(s)
+        current_inr = raw_price * rate if "-USD" in s else raw_price
+        pnl = round((current_inr - p['buy_price']) * p['qty'], 2)
+        state['positions'][s] = {
+            **p,
+            'current_price': current_inr,
+            'pnl': pnl,
+            'type': itype
+        }
     state['watchlist']  = state.get('watchlist', {})
+    state['paper_mode'] = True
     state['paper_mode'] = True
 
 # ─────────────────────────────────────────────────────────────────────────────
