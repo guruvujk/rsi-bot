@@ -529,12 +529,18 @@ def scan():
 # Scheduled alerts
 # ─────────────────────────────────────────────────────────────────────────────
 def morning_briefing():
+    now = datetime.now(IST)
+    if now.hour > 10:  # Don't send if restarted after 10 AM
+        return
+
     active = []
     if STOCKS["enabled"]:      active.append("🏦 NSE Stocks")
     if INDICES["enabled"]:     active.append("📈 Indices")
     if COMMODITIES["enabled"]: active.append("💰 Commodities")
     if FOREX["enabled"]:       active.append("💱 Forex")
     if CRYPTO["enabled"]:      active.append("🪙 Crypto")
+    if ETFS["enabled"]:        active.append("📊 ETFs")
+    if US_STOCKS["enabled"]:   active.append("🌍 US Stocks")
     send_telegram(
         f"🌅 *Good Morning!*\n{'─'*24}\n"
         f"Date    : {datetime.now(IST).strftime('%d %b %Y')}\n"
