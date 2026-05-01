@@ -414,6 +414,9 @@ def alerts():
     return jsonify({"alerts": bot_state.get("alerts", [])})
 
 @app.route("/status")
+@app.route("/ping")
+def ping():
+    return "pong", 200
 def status():
     return jsonify({"status": "running", "connected": True})
 
