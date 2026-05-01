@@ -1,0 +1,141 @@
+{
+  "capital": 84747.3462,
+  "positions": {
+    "HDFCBANK.NS": {
+      "qty": 3,
+      "buy_price": 768.4,
+      "buy_time": "09:19",
+      "itype": "STOCK",
+      "stop_loss": 753.032,
+      "target": 791.452
+    },
+    "HG=F": {
+      "qty": 488,
+      "buy_price": 6.0055,
+      "buy_time": "10:21",
+      "itype": "COMMODITY",
+      "stop_loss": 5.8554,
+      "target": 6.185665
+    },
+    "SI=F": {
+      "qty": 38,
+      "buy_price": 74.255,
+      "buy_time": "10:32",
+      "itype": "COMMODITY",
+      "stop_loss": 72.3986,
+      "target": 76.48265
+    },
+    "GC=F": {
+      "qty": 1,
+      "buy_price": 4597.2998,
+      "buy_time": "13:19",
+      "itype": "COMMODITY",
+      "stop_loss": 4482.3673,
+      "target": 4735.218794
+    },
+    "BZ=F": {
+      "qty": 25,
+      "buy_price": 104.09,
+      "buy_time": "13:19",
+      "itype": "COMMODITY",
+      "stop_loss": 101.4878,
+      "target": 107.2127
+    }
+  },
+  "trades": [
+    {
+      "time": "08:00",
+      "symbol": "AAVE-USD",
+      "action": "BUY",
+      "price": 7919.86,
+      "qty": 1,
+      "rsi": 29.96,
+      "pnl": null,
+      "reason": "RSI BUY"
+    },
+    {
+      "time": "08:10",
+      "symbol": "SOL-USD",
+      "action": "BUY",
+      "price": 7082.82,
+      "qty": 1,
+      "rsi": 29.59,
+      "pnl": null,
+      "reason": "RSI BUY"
+    },
+    {
+      "time": "08:10",
+      "symbol": "LINK-USD",
+      "action": "BUY",
+      "price": 775.91,
+      "qty": 3,
+      "rsi": 28.4,
+      "pnl": null,
+      "reason": "RSI BUY"
+    },
+    {
+      "time": "08:16",
+      "symbol": "BNB-USD",
+      "action": "BUY",
+      "price": 52679.97,
+      "qty": 1,
+      "rsi": 29.19,
+      "pnl": null,
+      "reason": "RSI BUY"
+    },
+    {
+      "time": "09:19",
+      "symbol": "HDFCBANK.NS",
+      "action": "BUY",
+      "price": 768.4,
+      "qty": 3,
+      "rsi": 14.87,
+      "pnl": null,
+      "reason": "RSI BUY"
+    },
+    {
+      "time": "10:21",
+      "symbol": "HG=F",
+      "action": "BUY",
+      "price": 6.01,
+      "qty": 488,
+      "rsi": 26.42,
+      "pnl": null,
+      "reason": "RSI BUY",
+      "date": "01-May-2026"
+    },
+    {
+      "time": "10:32",
+      "symbol": "SI=F",
+      "action": "BUY",
+      "price": 74.25,
+      "qty": 38,
+      "rsi": 28.3,
+      "pnl": null,
+      "reason": "RSI BUY",
+      "date": "01-May-2026"
+    },
+    {
+      "time": "13:19",
+      "symbol": "GC=F",
+      "action": "BUY",
+      "price": 4597.3,
+      "qty": 1,
+      "rsi": 27.95,
+      "pnl": null,
+      "reason": "RSI BUY",
+      "date": "01-May-2026"
+    },
+    {
+      "time": "13:19",
+      "symbol": "BZ=F",
+      "action": "BUY",
+      "price": 104.09,
+      "qty": 25,
+      "rsi": 9.25,
+      "pnl": null,
+      "reason": "RSI BUY",
+      "date": "01-May-2026"
+    }
+  ]
+}
