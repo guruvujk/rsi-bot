@@ -541,7 +541,7 @@ class PaperTrader:
 
             ltp = prices[symbol]
             ltp_inr = ltp * rate if "-USD" in symbol else ltp
-            buy_inr = pos["buy_price"] * rate if "-USD" in symbol else pos["buy_price"]
+            buy_inr = pos["buy_price"]
             stop_loss = buy_inr * (1 - STOP_LOSS_PCT)
 
             if ltp_inr <= stop_loss:
@@ -552,7 +552,7 @@ class PaperTrader:
 
                 ok, pnl = self.sell(
                     symbol     = symbol,
-                    price      = ltp,
+                    price      = ltp_inr,
                     rsi        = 50.0,        # RSI unknown at stop-loss time
                     reason     = f"STOP-LOSS ({loss_pct*100:.1f}%)",
                     indicators = {}
