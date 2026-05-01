@@ -642,23 +642,9 @@ if __name__ == "__main__":
         ] if g["enabled"]
     ]
 
-    send_telegram(
-        f"🤖 *RSI Bot — All Instruments v3*\n{'─'*24}\n"
-        f"Capital    : ₹{CAPITAL:,}\n"
-        f"Instruments: {len(WATCHLIST)}\n"
-        f"Markets    : {', '.join(active_names)}\n"
-        f"Mode       : 📄 Paper Trading\n"
-        f"Dashboard  : https://rsi-bot-4yu1.onrender.com\n\n"
-        f"Adaptive SL: Forex 0.8% | Stocks 2% | Crypto 4%\n"
-        f"Max/trade  : ₹{MAX_CAPITAL_PER_TRADE:,}",
-        "START"
-    )
+   
 
-    speak_alert(
-        f"RSI Bot version 3 started with fixes. Capital rupees {CAPITAL:,}. "
-        f"Scanning {len(WATCHLIST)} instruments.",
-        voice="Raj"
-    )
+   
 
     threading.Thread(target=start_dashboard, daemon=True).start()
     scan()
