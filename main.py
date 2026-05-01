@@ -384,6 +384,7 @@ def scan_symbol(symbol, current_prices):
                         'date'  : datetime.now(IST).strftime('%d-%b-%Y'),
                     }
                     trades.append(trade)
+                    save_state(pt)  
                     save_trade(trade)
 
 
@@ -461,6 +462,7 @@ def scan_symbol(symbol, current_prices):
                 }
                 trades.append(trade)
                 save_trade(trade)
+                save_state(pt)  
 
 
     except Exception as e:
