@@ -16,7 +16,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # ── Shared live state (written by main.py, read by dashboard) ────────────────
 # Load from PostgreSQL on startup
 try:
-    from db_state import load_state as _db_load, init_db as _init_db
+    from db_state import load_state as _db_load, init_db as _init_db, load_trades as _db_load_trades
     _init_db()
     _saved = _db_load()
     if _saved:
@@ -30,7 +30,7 @@ except Exception as _e:
 bot_state = {
     "capital"      : _saved.get("capital", 100000) if _saved else 100000,
     "positions"    : _saved.get("positions", {}) if _saved else {},
-    "trades"       : _saved.get("trades", []) if _saved else [],
+    "trades"       : _db_load_trades() if True else [],
     "pnl"          : _saved.get("pnl", 0.0) if _saved else 0.0,
     "open_pnl"     : _saved.get("open_pnl", 0.0) if _saved else 0.0,
     "realised_pnl" : _saved.get("realised_pnl", 0.0) if _saved else 0.0,
