@@ -516,7 +516,8 @@ class PaperTrader:
             bought  = p["buy_price"]
             qty     = p["qty"]
             if "-USD" in s:
-                pnl = (current - bought) * qty * rate
+                current_inr = current * rate
+                pnl = (current_inr - bought) * qty
             else:
                 pnl = (current - bought) * qty
             total += pnl
