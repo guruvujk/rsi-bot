@@ -25,31 +25,21 @@ except Exception as _e:
     print(f"[Dashboard] DB load error: {_e}")
     _saved = None
 
-# Load from PostgreSQL on startup
-try:
-    from db_state import load_state as _db_load, init_db as _init_db
-    _init_db()
-    _saved = _db_load()
-    if _saved:
-        print(f"[Dashboard] Loaded from DB: capital={_saved.get('capital')}, positions={len(_saved.get('positions',{}))}, trades={len(_saved.get('trades',[]))}")
-except Exception as _e:
-    print(f"[Dashboard] DB load error: {_e}")
-    _saved = None
+
 
 bot_state = {
-    "capital"      : 100000,
-    "positions"    : 0,
-    "pnl"          : 0.0,
-    "open_pnl"     : 0.0,
-    "portfolio_val": 100000,
-    "return_pct"   : 0.0,
-    "win_rate"     : 0.0,
-    "total_trades" : 0,
-    "wins"         : 0,
-    "losses"       : 0,
-    "trades"       : [],
-    "watchlist"    : {},
-    "positions"    : {},
+    "capital"      : _saved.get("capital", 100000) if _saved else 100000,
+    "positions"    : _saved.get("positions", {}) if _saved else {},
+    "trades"       : _saved.get("trades", []) if _saved else [],
+    "pnl"          : _saved.get("pnl", 0.0) if _saved else 0.0,
+    "open_pnl"     : _saved.get("open_pnl", 0.0) if _saved else 0.0,
+    "realised_pnl" : _saved.get("realised_pnl", 0.0) if _saved else 0.0,
+    "total_trades" : _saved.get("total_trades", 0) if _saved else 0,
+    "wins"         : _saved.get("wins", 0) if _saved else 0,
+    "losses"       : _saved.get("losses", 0) if _saved else 0,
+    "win_rate"     : _saved.get("win_rate", 0) if _saved else 0,
+    "return_pct"   : _saved.get("return_pct", 0) if _saved else 0,
+    "watchlist"    : _saved.get("watchlist", {}) if _saved else {},
     "paper_mode"   : True,
 }
 
