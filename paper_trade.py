@@ -547,8 +547,8 @@ class PaperTrader:
             if ltp_inr <= stop_loss:
                 loss_pct = (ltp_inr - buy_inr) / buy_inr
                 print(f"  🔴 STOP-LOSS: {symbol} | "
-                      f"Buy ₹{pos['buy_price']:.2f} → LTP ₹{ltp:.2f} | "
-                      f"Stop ₹{stop_loss:.2f} | Loss {loss_pct*100:.2f}%")
+      f"Buy ₹{buy_inr:.2f} → LTP ₹{ltp_inr:.2f} | "
+      f"Stop ₹{stop_loss:.2f} | Loss {loss_pct*100:.2f}%")
 
                 ok, pnl = self.sell(
                     symbol     = symbol,
@@ -585,7 +585,7 @@ class PaperTrader:
     # ── CSV LOG ───────────────────────────────────────────────────────────────
     def _log_csv(self, row: dict):
         exists = os.path.exists(LOG_FILE)
-        with open(LOG_FILE, "a", newline="") as f:
+        with open(LOG_FILE, "a", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=row.keys())
             if not exists:
                 w.writeheader()
