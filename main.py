@@ -63,10 +63,11 @@ def speak_alert(message: str, voice: str = "Raj"):
 def save_state(trader: PaperTrader):
     try:
         stats = trader.stats()
+        from db_state import load_trades as _lt
         data = {
             "capital"      : trader.capital,
             "positions"    : trader.positions,
-            "trades"       : trader.trades,
+            "trades"       : _lt(),
             "total_trades" : stats.get("total_trades", 0),
             "wins"         : stats.get("wins", 0),
             "losses"       : stats.get("losses", 0),
