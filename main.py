@@ -217,10 +217,10 @@ if state:
 # ── CRITICAL: Rebuild trades from DB ─────────────────────────────────────────
 db_trades = load_trades()
 trader.trades = [t for t in db_trades if t.get("action") == "SELL"]
-
 print(f"  ✅ Restored {len(trader.trades)} closed trades from DB")
 print(f"  ✅ Capital: ₹{trader.capital:,.2f}")
 print(f"  ✅ Open positions: {list(trader.positions.keys())}")
+save_state(trader)  # Refresh bot_state with correct prices on startup
 
 def patch_old_positions(trader):
     for symbol, pos in trader.positions.items():
