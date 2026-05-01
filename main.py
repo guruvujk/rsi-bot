@@ -30,6 +30,7 @@ from rsi_engine      import fetch_ohlcv, get_signal
 from telegram_alerts import send_telegram
 from dashboard       import start_dashboard, bot_state as state
 from paper_trade     import PaperTrader
+from db_state        import load_trades, load_state as db_load_state
 
 IST        = pytz.timezone("Asia/Kolkata")
 STATE_FILE = "bot_state.json"
@@ -95,14 +96,23 @@ def save_trade(trade):
 
 def load_state(trader: PaperTrader):
     try:
-        from db_state import load_state as db_load, init_db
+        from db_state import load_state as db_load, load_trades as db_load_trades, init_db
         init_db()
         data = db_load()
         if data:
             trader.capital   = float(data.get("capital", CAPITAL))
             trader.positions = data.get("positions", {})
-            trader.trades    = data.get("trades", [])
-            print(f"  [State] Restored from DB")
+            # ── Always rebuild trades from DB trades table ──
+            try:
+                stored_trades = db_load_trades()
+                trader.trades   = [t for t in stored_trades if t.get("action") == "SELL"]
+                print(f"  [State] Restored from DB — "
+                      f"Capital: ₹{trader.capital:,.0f} | "
+                      f"Positions: {len(trader.positions)} | "
+                      f"Closed trades: {len(trader.trades)}")
+            except Exception as e:
+                trader.trades = []
+                print(f"  [DB] Reload trades failed: {e}")
             return
     except Exception as e:
         print(f"  [DB] {e}")
@@ -111,11 +121,10 @@ def load_state(trader: PaperTrader):
     try:
         with open(STATE_FILE) as f:
             data = json.load(f)
-        trader.capital   = float(data.get("capital",   CAPITAL))
+        trader.capital   = float(data.get("capital", CAPITAL))
         trader.positions = data.get("positions", {})
-        trader.trades    = data.get("trades",    [])
-        print(f"  [State] Restored — Capital: ₹{trader.capital:,.0f}"
-              f"  |  Open positions: {len(trader.positions)}")
+        trader.trades    = []   # ← don't restore from JSON, DB is source of truth
+        print(f"  [State] Restored from file — Capital: ₹{trader.capital:,.0f}")
     except Exception as e:
         print(f"  [State] Load failed (starting fresh): {e}")
 
@@ -191,7 +200,19 @@ def calc_qty(symbol: str, price: float, capital: float, itype: str) -> int:
 # Initialise trader (with crash recovery)
 # ─────────────────────────────────────────────────────────────────────────────
 pt = PaperTrader(CAPITAL)
-load_state(pt)   # FIX: enabled — crash recovery active
+trader = pt
+state = db_load_state()
+if state:
+    trader.capital   = state.get("capital", trader.initial_capital)
+    trader.positions = state.get("positions", {})
+
+# ── CRITICAL: Rebuild trades from DB ─────────────────────────────────────────
+db_trades = load_trades()
+trader.trades = [t for t in db_trades if t.get("action") == "SELL"]
+
+print(f"  ✅ Restored {len(trader.trades)} closed trades from DB")
+print(f"  ✅ Capital: ₹{trader.capital:,.2f}")
+print(f"  ✅ Open positions: {list(trader.positions.keys())}")
 
 def patch_old_positions(trader):
     for symbol, pos in trader.positions.items():
