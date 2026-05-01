@@ -288,9 +288,11 @@ for s, p in pt.positions.items():
     raw_price = state.get('watchlist', {}).get(s, {}).get('price', p['buy_price'])
     itype = get_instrument_type(s)
     current_inr = raw_price * rate if "-USD" in s else raw_price
+    pnl = round((current_inr - p['buy_price']) * p['qty'], 2)
     state['positions'][s] = {
         **p,
         'current_price': current_inr,
+        'pnl': pnl,
         'type': itype
     }
     state['watchlist']  = state.get('watchlist', {})
