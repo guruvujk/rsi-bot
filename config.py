@@ -48,7 +48,7 @@ LOAD_SAVED_POSITIONS = True    # FIX: enabled — crash recovery works now
 
 # ── RSI Settings ────────────────────────────────────
 RSI_PERIOD = 14
-RSI_BUY    = 35    # FIX: tighter (was 35) — only strong oversold signals
+RSI_BUY    = 42    # FIX: tighter (was 35) — only strong oversold signals
 RSI_SELL   = 70    # FIX: tighter (was 65) — only strong overbought signals
 
 # ── Scan Intervals (seconds) ─────────────────────────
@@ -243,7 +243,7 @@ INDICES = {
 }
 
 ETFS = {
-    "enabled": True,
+    "enabled": False,
     "symbols": [
         "NIFTYBEES.NS","BANKBEES.NS","GOLDBEES.NS",
         "JUNIORBEES.NS","ITBEES.NS","PHARMABEES.NS","LIQUIDBEES.NS",
@@ -273,7 +273,7 @@ FOREX = {
 }
 
 CRYPTO = {
-    "enabled": False,
+    "enabled": True,
     "symbols": [
         "BTC-USD","ETH-USD","BNB-USD","SOL-USD",
         "XRP-USD","ADA-USD","AVAX-USD","DOGE-USD","DOT-USD",
@@ -291,7 +291,7 @@ US_STOCKS = {
         "JNJ","PFE","UNH",
         "WMT","KO","MCD",
         "XOM","CVX",
-        "SPY","QQQ","GLD",
+        
     ]
 }
 
