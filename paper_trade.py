@@ -430,12 +430,15 @@ class PaperTrader:
 
         self.capital -= cost
         self.positions[symbol] = {
-            "qty"      : qty,
-            "buy_price": round(price, 4),
-            "buy_time" : datetime.now().strftime("%H:%M"),
-            "itype"    : itype,
-            "stop_loss": round(price * (1 - sl_pct), 4),
-        }
+         "qty"          : qty,
+         "buy_price"    : round(price, 4),
+         "buy_time"     : datetime.now().strftime("%H:%M"),
+         "itype"        : itype,
+         "stop_loss"    : round(price * (1 - sl_pct), 4),
+         "target"       : round(price * (1 + tp_pct), 4),
+         "highest_price": round(price, 4),  # ← ADD THIS
+         "tsl_active"   : False,            # ← ADD THIS
+       }
 
         ind = indicators or {}
         row = {

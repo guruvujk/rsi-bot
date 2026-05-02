@@ -228,8 +228,10 @@ def patch_old_positions(trader):
         tp_pct = get_adaptive_tp(itype)
         bp     = pos.get("buy_price", 0)
         if bp > 0:
-            pos["stop_loss"] = round(bp * (1 - sl_pct), 6)
-            pos["target"]    = round(bp * (1 + tp_pct), 6)
+            pos["stop_loss"]    = round(bp * (1 - sl_pct), 6)
+            pos["target"]       = round(bp * (1 + tp_pct), 6)
+            pos["highest_price"]= pos.get("highest_price", bp)  # ← ADD
+            pos["tsl_active"]   = pos.get("tsl_active", False)  # ← ADD
     print(f"  [Patch] Recalculated SL/TP on {len(trader.positions)} positions")
 
 patch_old_positions(pt)
@@ -379,6 +381,28 @@ def scan_symbol(symbol, current_prices):
         if symbol in pt.positions:
             pos     = pt.positions[symbol]
             chg_pct = (price - pos['buy_price']) / pos['buy_price']
+            # ── TRAILING STOP LOSS ────────────────────────────────
+        tp_pct   = get_adaptive_tp(itype)
+        bp       = pos['buy_price']
+        half_tp  = tp_pct * 0.5
+
+        # Update highest price
+        if price > pos.get('highest_price', bp):
+            pos['highest_price'] = price
+
+        # Activate TSL when 50% of target reached
+        if not pos.get('tsl_active') and chg_pct >= half_tp:
+            pos['tsl_active'] = True
+            print(f"    → TSL ACTIVATED: {format_symbol(symbol)}")
+
+        # Trail: lock in 50% of profit above entry
+        if pos.get('tsl_active'):
+            profit    = pos['highest_price'] - bp
+            tsl_price = bp + (profit * 0.5)
+            if tsl_price > pos.get('stop_loss', 0):
+                pos['stop_loss'] = round(tsl_price, 4)
+                print(f"    → TSL updated: {format_symbol(symbol)} "
+                      f"SL → {format_price(symbol, tsl_price)}")
 
             # FIX: adaptive TP per instrument type
             tp = get_adaptive_tp(itype)
