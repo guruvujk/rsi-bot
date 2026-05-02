@@ -220,7 +220,6 @@ trader.trades = [t for t in db_trades if t.get("action") == "SELL"]
 print(f"  ✅ Restored {len(trader.trades)} closed trades from DB")
 print(f"  ✅ Capital: ₹{trader.capital:,.2f}")
 print(f"  ✅ Open positions: {list(trader.positions.keys())}")
-save_state(trader)  # Refresh bot_state with correct prices on startup
 
 def patch_old_positions(trader):
     for symbol, pos in trader.positions.items():
@@ -314,7 +313,9 @@ def sync_dashboard():
     rate = get_usd_inr_rate()
     state['positions'] = {}
     for s, p in pt.positions.items():
-        raw_price = state.get('watchlist', {}).get(s, {}).get('price', p['buy_price'])
+        raw_price = state.get('watchlist', {}).get(s, {}).get('price')
+        if raw_price is None:
+            raw_price = p['buy_price']
         itype = get_instrument_type(s)
         current_inr = raw_price * rate if "-USD" in s else raw_price
         pnl = round((current_inr - p['buy_price']) * p['qty'], 2)

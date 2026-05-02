@@ -103,6 +103,7 @@ DASHBOARD_HTML = """
              letter-spacing:0.8px; margin-bottom:6px; }
     .value { font-size:22px; font-weight:600; }
     .stat2 .value { font-size:20px; }
+    .note { margin-top:8px; font-size:11px; color:#64748b; text-align:center; }
 
     .green{color:#16a34a} .red{color:#dc2626} .blue{color:#2563eb} .gray{color:#475569}
 
@@ -169,8 +170,9 @@ DASHBOARD_HTML = """
 
 <div class="stats2">
   <div class="stat2">
-    <div class="label">Total Trades</div>
+    <div class="label">Closed Trades</div>
     <div class="value gray" id="total_trades">0</div>
+    <div class="note" title="Counts closed SELL trades only; open BUY positions are excluded.">SELL trades only</div>
   </div>
   <div class="stat2">
     <div class="label">Win Rate</div>
@@ -184,6 +186,7 @@ DASHBOARD_HTML = """
   <div class="stat2">
     <div class="label">Return</div>
     <div class="value gray" id="return_pct">0%</div>
+    <div class="note" title="Return includes the cost of open positions not yet sold.">Includes open position cost</div>
   </div>
 </div>
 
@@ -325,7 +328,7 @@ DASHBOARD_HTML = """
         <td style="color:#94a3b8;font-size:12px;">${t.time || ''}</td>
         <td style="font-weight:500;">${String(t.symbol||'').replace('.NS','')}</td>
         <td><span class="badge ${bClass}">${(t.action||'').toUpperCase()}</span></td>
-        <td>${fmt(t.price || 0)}</td>
+        <td>${fmt(t.price || t.buy_price || 0)}</td>
         <td>${t.qty || 0}</td>
         <td style="color:#64748b;">${Number(t.rsi||0).toFixed(1)}</td>
         <td>${pnlStr}</td>
@@ -495,6 +498,19 @@ def index():
 def push_updates():
     """Push live state to all connected browsers every 5 seconds."""
     while True:
+        try:
+            from db_state import load_trades as _lt
+            all_trades = _lt()
+            bot_state["trades"] = all_trades
+            closed = [t for t in all_trades if t.get("action") == "SELL"]
+            wins   = [t for t in closed if (t.get("pnl") or 0) > 0]
+            losses = [t for t in closed if (t.get("pnl") or 0) <= 0]
+            bot_state["total_trades"] = len(closed)
+            bot_state["wins"]         = len(wins)
+            bot_state["losses"]       = len(losses)
+            bot_state["win_rate"]     = round(len(wins)/len(closed)*100,1) if closed else 0
+        except Exception as e:
+            print(f"[push] {e}")
         socketio.emit('state_update', bot_state)
         time.sleep(5)
 

@@ -120,6 +120,7 @@ def load_trades():
             "time"      : r[1], 
             "symbol"    : r[2],
             "action"    : r[3],
+            "price"     : r[4],
             "buy_price" : r[4] if r[3] == "BUY" else "",
             "sell_price": r[4] if r[3] == "SELL" else "",
             "qty"       : r[5],
