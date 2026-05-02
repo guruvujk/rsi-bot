@@ -106,6 +106,12 @@ def get_signal(df: pd.DataFrame) -> tuple:
     # Need at least 30 bars for meaningful indicators
     if len(close) < 30:
         price = _safe_float(close.iloc[-1])
+        volume_ok = True
+    if 'Volume' in df.columns:
+        vol        = df['Volume'].squeeze()
+        vol_avg    = _safe_float(vol.rolling(20).mean().iloc[-1])
+        vol_curr   = _safe_float(vol.iloc[-1])
+        volume_ok  = vol_curr > vol_avg if vol_avg > 0 else True
         return "HOLD", 50.0, price, {}
 
     # ── RSI ──────────────────────────────────────────────────────────────────
@@ -133,15 +139,18 @@ def get_signal(df: pd.DataFrame) -> tuple:
 
     # ── Signal Logic ─────────────────────────────────────────────────────────
     # RSI is primary signal; MACD is confirmation
-    if rsi_val < RSI_BUY and macd_bull:
-        signal = "BUY"
-    elif rsi_val > RSI_SELL and not macd_bull:
-        signal = "SELL"
+    if rsi_val < RSI_BUY and macd_bull and volume_ok:
+        signal = "BUY"    # RSI + MACD + Volume all agree ✅
+    elif rsi_val > RSI_SELL and not macd_bull and volume_ok:
+        signal = "SELL"   # RSI + MACD + Volume all agree ✅
     else:
         signal = "HOLD"
 
     indicators = {
         "rsi"      : round(rsi_val, 2),
+        "vol_ok"   : volume_ok,
+        "vol_curr" : round(vol_curr if 'Volume' in df.columns else 0, 0),
+        "vol_avg"  : round(vol_avg if 'Volume' in df.columns else 0, 0),
         "macd"     : round(macd_val, 4),
         "macd_sig" : round(macd_sig, 4),
         "macd_bull": macd_bull,
