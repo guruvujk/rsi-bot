@@ -13,3 +13,9 @@ upload_*.py
 dedup_*.py
 *.backup
 test_journal.xlsx
+push_state.py
+restore_state.py
+upload2.py
+bot_state.json
+*.json.backup
+logs/
