@@ -296,6 +296,9 @@ def format_price(symbol, price):   # FIX: removed stray comma that caused Syntax
 # Dashboard sync
 # ─────────────────────────────────────────────────────────────────────────────
 def sync_dashboard():
+    global state
+    if state is None:
+        from dashboard import bot_state as state
     stats = pt.stats()
     state['capital']       = stats['capital']
     state['pnl']           = stats['total_pnl']
