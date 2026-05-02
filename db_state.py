@@ -5,10 +5,19 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 print(f"[DB] DATABASE_URL set: {bool(DATABASE_URL)}")
 
 def get_conn():
+    import re
     url = DATABASE_URL
-    # Neon requires this fix for psycopg2
-    if url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgres://", 1)
+    match = re.match(r'(?:postgresql|postgres)://([^:]+):([^@]+)@([^/:]+)(?::(\d+))?/([^?]+)', url)
+    if match:
+        user, password, host, port, dbname = match.groups()
+        return psycopg2.connect(
+            host=host,
+            port=int(port) if port else 5432,
+            user=user,
+            password=password,
+            dbname=dbname,
+            sslmode='require'
+        )
     return psycopg2.connect(url)
 
 def init_db():
