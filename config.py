@@ -6,7 +6,7 @@
 #   2. TARGET_PCT reduced 0.04→0.03 (adaptive TP used in main.py)
 #   3. MAX_POSITIONS reduced 8→5 (less exposure, safer)
 #   4. MAX_CAPITAL_PER_TRADE kept at ₹5000 (strictly enforced now)
-       DRAWDOWN_PCT = 0.05   # 5% — pause BUY if capital drops below this    
+DRAWDOWN_PCT = 0.05   # 5% — pause BUY if capital drops below this    
 #   5. RISK_PER_TRADE reduced 0.05→0.03 (3% per trade safer)
 #   6. RSI_BUY tightened 35→30 (stronger oversold signal required)
 #   7. RSI_SELL tightened 65→70 (stronger overbought signal required)
@@ -48,7 +48,7 @@ LOAD_SAVED_POSITIONS = True    # FIX: enabled — crash recovery works now
 
 # ── RSI Settings ────────────────────────────────────
 RSI_PERIOD = 14
-RSI_BUY    = 30    # FIX: tighter (was 35) — only strong oversold signals
+RSI_BUY    = 35    # FIX: tighter (was 35) — only strong oversold signals
 RSI_SELL   = 70    # FIX: tighter (was 65) — only strong overbought signals
 
 # ── Scan Intervals (seconds) ─────────────────────────
@@ -273,7 +273,7 @@ FOREX = {
 }
 
 CRYPTO = {
-    "enabled": True,
+    "enabled": False,
     "symbols": [
         "BTC-USD","ETH-USD","BNB-USD","SOL-USD",
         "XRP-USD","ADA-USD","AVAX-USD","DOGE-USD","DOT-USD",
