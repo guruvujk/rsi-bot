@@ -134,13 +134,9 @@ def get_signal(df: pd.DataFrame) -> tuple:
     # ── Signal Logic ─────────────────────────────────────────────────────────
     # RSI is primary signal; MACD is confirmation
     if rsi_val < RSI_BUY and macd_bull:
-        signal = "BUY"             # Strong: oversold + bullish momentum
-    elif rsi_val < RSI_BUY:
-        signal = "BUY"             # Oversold — buy even without MACD confirm
+        signal = "BUY"
     elif rsi_val > RSI_SELL and not macd_bull:
-        signal = "SELL"            # Strong: overbought + bearish momentum
-    elif rsi_val > RSI_SELL:
-        signal = "SELL"            # Overbought — sell even without MACD confirm
+        signal = "SELL"
     else:
         signal = "HOLD"
 
