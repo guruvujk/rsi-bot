@@ -453,6 +453,25 @@ def scan_symbol(symbol, current_prices):
               and symbol not in pt.positions
               and len(pt.positions) < MAX_POSITIONS):
 
+            # ── DRAWDOWN CIRCUIT BREAKER ──────────────────────────
+            from config import DRAWDOWN_PCT
+            drawdown_floor = pt.initial_capital * (1 - DRAWDOWN_PCT)
+            if pt.capital < drawdown_floor:
+                if not state.get('cb_alerted'):
+                    send_telegram(
+                        f"🔴 *CIRCUIT BREAKER TRIGGERED*\n"
+                        f"Capital ₹{pt.capital:,.0f} below floor "
+                        f"₹{drawdown_floor:,.0f}\n"
+                        f"New BUYs paused until recovery.",
+                        "INFO"
+                    )
+                    state['cb_alerted'] = True
+                    print(f"  🔴 CIRCUIT BREAKER: Capital ₹{pt.capital:,.0f} "
+                          f"< floor ₹{drawdown_floor:,.0f} — BUYs paused")
+                return
+            else:
+                state['cb_alerted'] = False  # reset when recovered
+
             if price < MIN_PRICE:
                 print(f"    → Skip {sym_d}: price ₹{price:.4f} below minimum")
                 return
