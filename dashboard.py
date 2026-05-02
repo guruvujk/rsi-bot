@@ -210,7 +210,7 @@ DASHBOARD_HTML = """
       <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span>
     </div>
     <table>
-      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th></tr></thead>
+      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th></tr></thead>
       <tbody id="positions-body">
         <tr><td colspan="5" class="empty-msg">No open positions</td></tr>
       </tbody>
@@ -303,12 +303,16 @@ DASHBOARD_HTML = """
       const ltp    = p.current_price || p.buy_price;
       const upnl   = ((ltp - p.buy_price) * p.qty).toFixed(2);
       const upnlColor = upnl >= 0 ? '#16a34a' : '#dc2626';
+      const tslBadge = p.tsl_active
+        ? `<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">🔒 ON</span>`
+        : `<span style="background:#f1f5f9;color:#94a3b8;padding:2px 8px;border-radius:20px;font-size:11px;">OFF</span>`;
       phtml += `<tr>
         <td style="font-weight:500;">${sym.replace('.NS','')}</td>
         <td>${p.qty}</td>
         <td>${fmt(p.buy_price)}</td>
         <td>${fmt(ltp)}</td>
         <td style="color:${upnlColor};font-weight:600;">₹${Number(upnl).toLocaleString('en-IN')}</td>
+        <td>${tslBadge}</td>
       </tr>`;
     }
     document.getElementById('positions-body').innerHTML =
