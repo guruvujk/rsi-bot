@@ -245,14 +245,18 @@ def is_tradeable(symbol):
     t    = now.hour * 60 + now.minute
 
     if itype in ("STOCK", "INDEX", "ETF"):
-        if wd >= 5:
+        if wd == 6 and t < 1200:
             return False
-        return 555 <= t <= 930
+        if wd == 5 and t >= 120:
+            return False
+        return 540 <= t <= 1410 or wd in (6, 0)
 
     if itype == "COMMODITY":
-        if wd >= 5:
+        if wd == 5 and t >= 120:   # Saturday after 2 AM — closed
             return False
-        return 540 <= t <= 1410
+        if wd == 6 and t < 1200:   # Sunday before 8 PM — closed
+            return False
+            return True
 
     if itype == "FOREX":
         if wd == 5 and t >= 120:
