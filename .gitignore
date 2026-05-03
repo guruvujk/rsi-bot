@@ -19,3 +19,5 @@ upload2.py
 bot_state.json
 *.json.backup
 logs/
+reset_neon.py
+force_reset.py

@@ -19,6 +19,9 @@ ALERT_EMOJI = {
 
 # ── TELEGRAM FUNCTIONS ─────────────────────────────────
 def send_telegram(message: str, alert_type: str = "INFO") -> bool:
+    import os
+    if os.environ.get("TELEGRAM_ENABLED", "true").lower() == "false":
+        return False
     try:
         emoji = ALERT_EMOJI.get(alert_type, "📢")
         payload = {
