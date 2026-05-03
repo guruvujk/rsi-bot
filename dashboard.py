@@ -1,11 +1,3 @@
-# dashboard.py — RSI Bot Live Dashboard
-# FIXES:
-#   1. Added /api/trade POST route (was 404)
-#   2. Added /api/position/update POST route
-#   3. Removed stale external API_BASE_URL calls (bot is self-contained)
-#   4. push_updates runs in daemon thread — no blocking
-#   5. Cleaner bot_state defaults
-
 from flask import Flask, render_template_string, request, jsonify
 from flask_socketio import SocketIO
 import threading, time
@@ -278,7 +270,11 @@ DASHBOARD_HTML = """
       const rsiPct   = Math.min(v.rsi, 100);
       const bClass   = v.signal === 'BUY'  ? 'badge-buy'
                      : v.signal === 'SELL' ? 'badge-sell' : 'badge-hold';
-      const priceStr = v.price ? fmt(v.price) : '—';
+      const isUsd = sym.includes('-USD') || sym.includes('/USD');
+      const priceStr = v.price
+      ? (isUsd ? '$' + Number(v.price).toLocaleString('en-US', {maximumFractionDigits:2})
+           : fmt(v.price))
+       : '—';
       whtml += `<tr>
         <td style="font-weight:500;">${sym.replace('.NS','').replace('=X','').replace('=F','')}</td>
         <td>${priceStr}</td>
@@ -309,8 +305,8 @@ DASHBOARD_HTML = """
       phtml += `<tr>
         <td style="font-weight:500;">${sym.replace('.NS','')}</td>
         <td>${p.qty}</td>
-        <td>${fmt(p.buy_price)}</td>
-        <td>${fmt(ltp)}</td>
+        <td>${sym.includes('-USD') ? '$'+Number(p.buy_price).toLocaleString('en-US',{maximumFractionDigits:2}) : fmt(p.buy_price)}</td>
+        <td>${sym.includes('-USD') ? '$'+Number(ltp).toLocaleString('en-US',{maximumFractionDigits:2}) : fmt(ltp)}</td>
         <td style="color:${upnlColor};font-weight:600;">₹${Number(upnl).toLocaleString('en-IN')}</td>
         <td>${tslBadge}</td>
       </tr>`;

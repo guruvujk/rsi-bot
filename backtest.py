@@ -1,241 +1,415 @@
-# backtest.py — RSI Strategy Backtesting Engine
+# backtest.py — RSI Bot Backtesting Engine
+# Tests full strategy: RSI + MACD + Volume filter + TSL
+# Period: 2 years fetch, trade last 1 year | All instruments | Excel report
+
 import pandas as pd
-import numpy as np
 import yfinance as yf
-import matplotlib.pyplot as plt
-from datetime import datetime
-import os
-import warnings
-import config
+from datetime import datetime, timedelta
+from config import (
+    WATCHLIST, RSI_BUY, RSI_SELL, CAPITAL,
+    get_instrument_type
+)
+from rsi_engine import fetch_ohlcv, compute_rsi, compute_macd, _safe_float
 
-warnings.filterwarnings('ignore')
+def get_adaptive_sl(itype: str) -> float:
+    return {
+        "FOREX"    : 0.008,
+        "STOCK"    : 0.015,
+        "INDEX"    : 0.010,
+        "ETF"      : 0.015,
+        "COMMODITY": 0.020,
+        "CRYPTO"   : 0.040,
+        "US_STOCK" : 0.020,
+    }.get(itype, 0.02)
 
-# ── Configuration ───────────────────────────────────
-class BacktestConfig:
-    """Backtest settings - mirrors config.py for consistency"""
-    STARTING_CAPITAL = 100000
-    RISK_PER_TRADE = config.RISK_PER_TRADE      # 5% from config
-    STOP_LOSS_PCT = config.STOP_LOSS_PCT        # 2% from config
-    TARGET_PCT = config.TARGET_PCT              # 4% from config
-    MAX_POSITIONS = config.MAX_POSITIONS        # 5 from config
-    RSI_PERIOD = config.RSI_PERIOD              # 14 from config
-    RSI_BUY = config.RSI_BUY                    # 30 from config
-    RSI_SELL = config.RSI_SELL                  # 70 from config
-    
-    # Backtest-specific
-    START_DATE = "2024-01-01"
-    END_DATE = datetime.now().strftime("%Y-%m-%d")
-    INTERVAL = "1h"  # 1h, 4h, 1d
-    SYMBOLS = ["BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD"]  # Test subset
-    
-    # Output
-    SAVE_PLOTS = True
-    SAVE_TRADES = True
-    OUTPUT_DIR = "logs/backtests"
+def get_adaptive_tp(itype: str) -> float:
+    return {
+        "FOREX"    : 0.006,
+        "STOCK"    : 0.030,
+        "INDEX"    : 0.020,
+        "ETF"      : 0.020,
+        "COMMODITY": 0.030,
+        "CRYPTO"   : 0.050,
+        "US_STOCK" : 0.030,
+    }.get(itype, 0.03)
 
-# ── RSI Calculator (Same as live bot) ───────────────
-def calculate_rsi(close: pd.Series, period: int = 14) -> pd.Series:
-    """Calculate RSI using same method as paper_trade.py"""
-    delta = close.diff()
-    gain = delta.where(delta > 0, 0).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-    rs = gain / loss.replace(0, 0.0001)
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
 
-# ── Backtest Engine ─────────────────────────────────
-class RSIBacktester:
-    def __init__(self, config_class=BacktestConfig):
-        self.cfg = config_class
-        self.trades = []
-        self.equity_curve = []
-        self.stats = {}
-        os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
-    
-    def fetch_data(self, symbol: str) -> pd.DataFrame:
-        print(f"📥 Fetching {symbol} ({self.cfg.START_DATE} to {self.cfg.END_DATE})...")
-        try:
-            df = yf.download(
-                symbol,
-                start=self.cfg.START_DATE,
-                end=self.cfg.END_DATE,
-                interval=self.cfg.INTERVAL,
-                progress=False
-            )
-            if df.empty or len(df) < self.cfg.RSI_PERIOD + 10:
-                print(f"  ⚠️ Insufficient data for {symbol}")
-                return None
-            return df
-        except Exception as e:
-            print(f"  ❌ Error fetching {symbol}: {e}")
-            return None
-    
-    def generate_signals(self, df: pd.DataFrame) -> pd.DataFrame:
-        df = df.copy()
-        df['RSI'] = calculate_rsi(df['Close'], self.cfg.RSI_PERIOD)
-        df['BUY_SIGNAL'] = df['RSI'] < self.cfg.RSI_BUY
-        df['SELL_SIGNAL'] = df['RSI'] > self.cfg.RSI_SELL
-        return df
-    
-    def simulate_trades(self, df: pd.DataFrame, symbol: str) -> list:
-        trades = []
-        capital = self.cfg.STARTING_CAPITAL
-        positions = {}
-        
-        for idx, row in df.iterrows():
-            current_price = row['Close']
-            current_rsi = row['RSI']
-            timestamp = idx
-            
-            # ── Check Exits First ───────────────────
-            if symbol in positions:
-                pos = positions[symbol]
-                exit_reason = None
-                pnl = 0
-                
-                if current_price <= pos['sl']:
-                    exit_reason = 'Stop Loss'
-                    pnl = (current_price - pos['entry']) * pos['qty']
-                elif current_price >= pos['target']:
-                    exit_reason = 'Target Hit'
-                    pnl = (current_price - pos['entry']) * pos['qty']
-                elif row['SELL_SIGNAL']:
-                    exit_reason = 'RSI Exit'
-                    pnl = (current_price - pos['entry']) * pos['qty']
-                
-                if exit_reason:
+INITIAL_CAPITAL = CAPITAL
+REPORT_FILE     = "logs/Backtest_Report.xlsx"
+PERIOD          = "2y"   # fetch 2yr so EMA-200 is warmed up
+INTERVAL        = "1d"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+def backtest_symbol(symbol: str) -> list:
+    """Run backtest on a single symbol. Returns list of trade dicts."""
+    try:
+        df = yf.download(symbol, period=PERIOD, interval=INTERVAL,
+                         progress=False, auto_adjust=True, threads=False)
+        if df is None or df.empty or len(df) < 210:
+            return []
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        df.dropna(inplace=True)
+        close  = df['Close'].squeeze()
+        volume = df['Volume'].squeeze() if 'Volume' in df.columns else None
+
+        # ── Compute all indicators ONCE, outside the loop ────────────────────
+        rsi                            = compute_rsi(close)
+        macd_line, sig_line, histogram = compute_macd(close)
+        vol_avg = volume.rolling(20).mean() if volume is not None else None
+        ema200  = close.ewm(span=200, adjust=False).mean()
+
+        itype  = get_instrument_type(symbol)
+        sl_pct = get_adaptive_sl(itype)
+        tp_pct = get_adaptive_tp(itype)
+
+        trades   = []
+        position = None
+        capital  = INITIAL_CAPITAL
+
+        # Start after EMA-200 is warmed up (bar 210 onwards)
+        start_idx = max(210, len(df) - 252)
+
+        for i in range(210, len(df)):
+            price    = _safe_float(close.iloc[i])
+            rsi_val  = _safe_float(rsi.iloc[i], 50.0)
+            macd_val = _safe_float(macd_line.iloc[i])
+            macd_s   = _safe_float(sig_line.iloc[i])
+            date     = df.index[i]
+
+            macd_bull        = macd_val > macd_s
+            macd_hist_prev   = _safe_float(histogram.iloc[i - 1])
+            macd_hist_curr   = _safe_float(histogram.iloc[i])
+            macd_hist_rising = macd_hist_curr > macd_hist_prev
+
+            # ── Volume filter ─────────────────────────────────────────────────
+            vol_ok = True
+            if vol_avg is not None:
+                va     = _safe_float(vol_avg.iloc[i])
+                vc     = _safe_float(volume.iloc[i])
+                vol_ok = (vc > va) if va > 0 else True
+
+            # ── Trend filter ──────────────────────────────────────────────────
+            # Only use EMA-200: blocks bear markets, allows dip-buying in uptrends
+            # price > EMA-50 is intentionally NOT required — RSI oversold means
+            # the stock is dipping below short-term average, which is the entry point
+            e200     = _safe_float(ema200.iloc[i])
+            trend_ok = price > e200
+
+            # ── EXIT ──────────────────────────────────────────────────────────
+            if position:
+                bp         = position['buy_price']
+                highest    = position.get('highest_price', bp)
+                tsl_active = position.get('tsl_active', False)
+                chg_pct    = (price - bp) / bp
+
+                if price > highest:
+                    position['highest_price'] = price
+                    highest = price
+
+                if not tsl_active and chg_pct >= tp_pct * 0.4:
+                    position['tsl_active'] = True
+                    tsl_active = True
+
+                if tsl_active:
+                    profit    = highest - bp
+                    tsl_price = bp + (profit * 0.5)
+                    if tsl_price > position.get('stop_loss', 0):
+                        position['stop_loss'] = tsl_price
+
+                reason = None
+                if price <= position['stop_loss']:
+                    reason = "STOP LOSS"
+                elif chg_pct >= tp_pct:
+                    reason = "TARGET HIT"
+                elif rsi_val > RSI_SELL and not macd_bull:
+                    reason = "RSI SELL"
+
+                if reason:
+                    pnl     = (price - bp) * position['qty']
+                    capital += position['qty'] * price
                     trades.append({
-                        'symbol': symbol,
-                        'entry_date': pos['entry_date'],
-                        'exit_date': timestamp,
-                        'entry_price': pos['entry'],
-                        'exit_price': current_price,
-                        'qty': pos['qty'],
-                        'pnl': pnl,
-                        'return_pct': (pnl / (pos['entry'] * pos['qty'])) * 100,
-                        'exit_reason': exit_reason,
-                        'entry_rsi': pos['entry_rsi'],
-                        'exit_rsi': current_rsi
+                        "symbol"    : symbol,
+                        "itype"     : itype,
+                        "buy_date"  : position['buy_date'].strftime("%d-%b-%Y"),
+                        "sell_date" : date.strftime("%d-%b-%Y"),
+                        "buy_price" : round(bp, 4),
+                        "sell_price": round(price, 4),
+                        "qty"       : position['qty'],
+                        "pnl"       : round(pnl, 2),
+                        "pnl_pct"   : round(chg_pct * 100, 2),
+                        "reason"    : reason,
+                        "tsl_used"  : tsl_active,
+                        "result"    : "WIN" if pnl > 0 else "LOSS",
                     })
-                    capital += current_price * pos['qty']
-                    del positions[symbol]
+                    position = None
+
+            # ── ENTRY ─────────────────────────────────────────────────────────
+            # Buy the dip: RSI oversold + volume spike + MACD turning up
+            # Only skip if price is below EMA-200 (confirmed bear market)
+            elif rsi_val < RSI_BUY and vol_ok and macd_hist_rising and trend_ok:
+                max_alloc = min(capital * 0.03, 5000)
+                qty       = int(max_alloc / price)
+                if qty <= 0 or qty * price > capital:
                     continue
-            
-            # ── Check Entries ───────────────────────
-            if row['BUY_SIGNAL'] and symbol not in positions:
-                if len(positions) >= self.cfg.MAX_POSITIONS:
-                    continue
-                
-                risk_amount = capital * self.cfg.RISK_PER_TRADE
-                qty = int(risk_amount // current_price)
-                if qty <= 0: continue
-                
-                sl_price = current_price * (1 - self.cfg.STOP_LOSS_PCT)
-                target_price = current_price * (1 + self.cfg.TARGET_PCT)
-                
-                positions[symbol] = {
-                    'entry': current_price, 'qty': qty,
-                    'sl': sl_price, 'target': target_price,
-                    'entry_date': timestamp, 'entry_rsi': current_rsi
+                capital -= qty * price
+                position = {
+                    "buy_price"    : price,
+                    "buy_date"     : date,
+                    "qty"          : qty,
+                    "stop_loss"    : round(price * (1 - sl_pct), 4),
+                    "highest_price": price,
+                    "tsl_active"   : False,
                 }
-                capital -= current_price * qty
-            
-            # ── Track Equity ────────────────────────
-            total_value = capital
-            for sym, pos in positions.items():
-                total_value += current_price * pos['qty']
-            
-            self.equity_curve.append({
-                'timestamp': timestamp, 'capital': capital,
-                'portfolio_value': total_value, 'open_positions': len(positions)
-            })
-        
+
         return trades
-    
-    def calculate_stats(self, trades: list) -> dict:
-        if not trades: return {"error": "No trades executed"}
-        df_trades = pd.DataFrame(trades)
-        total_trades = len(df_trades)
-        winning_trades = df_trades[df_trades['pnl'] > 0]
-        losing_trades = df_trades[df_trades['pnl'] <= 0]
-        
-        win_rate = (len(winning_trades) / total_trades * 100) if total_trades > 0 else 0
-        total_pnl = df_trades['pnl'].sum()
-        avg_win = winning_trades['pnl'].mean() if len(winning_trades) > 0 else 0
-        avg_loss = losing_trades['pnl'].mean() if len(losing_trades) > 0 else 0
-        profit_factor = abs(winning_trades['pnl'].sum() / losing_trades['pnl'].sum()) if len(losing_trades) > 0 and losing_trades['pnl'].sum() != 0 else 0
-        
-        starting_capital = self.cfg.STARTING_CAPITAL
-        ending_capital = starting_capital + total_pnl
-        total_return = (ending_capital - starting_capital) / starting_capital * 100
-        
-        equity_df = pd.DataFrame(self.equity_curve)
-        max_drawdown = 0
-        sharpe = 0
-        if not equity_df.empty:
-            equity_df['peak'] = equity_df['portfolio_value'].cummax()
-            equity_df['drawdown'] = (equity_df['portfolio_value'] - equity_df['peak']) / equity_df['peak']
-            max_drawdown = equity_df['drawdown'].min() * 100
-            
-            equity_df['returns'] = equity_df['portfolio_value'].pct_change()
-            sharpe = (np.sqrt(252) * equity_df['returns'].mean() / equity_df['returns'].std()) if equity_df['returns'].std() > 0 else 0
 
-        return {
-            'total_trades': total_trades, 'win_rate': round(win_rate, 2),
-            'total_pnl': round(total_pnl, 2), 'return_pct': round(total_return, 2),
-            'max_drawdown_pct': round(max_drawdown, 2), 'sharpe_ratio': round(sharpe, 2),
-            'ending_capital': round(ending_capital, 2)
-        }
+    except Exception as e:
+        print(f"  [BT] {symbol}: {e}")
+        return []
 
-    def run(self, symbol: str = None) -> dict:
-        symbols = [symbol] if symbol else self.cfg.SYMBOLS
-        all_stats = {}
-        
-        print(f"\n🚀 Starting RSI Backtest")
-        print(f"📅 Period: {self.cfg.START_DATE} to {self.cfg.END_DATE}")
-        print(f"⏱️  Interval: {self.cfg.INTERVAL}")
-        print(f"🎯 Strategy: RSI < {self.cfg.RSI_BUY} BUY | RSI > {self.cfg.RSI_SELL} SELL")
-        print("=" * 70)
-        
-        for sym in symbols:
-            print(f"\n🔍 Backtesting {sym}...")
-            df = self.fetch_data(sym)
-            if df is None: continue
-            
-            df = self.generate_signals(df)
-            self.trades = []
-            self.equity_curve = []
-            
-            trades = self.simulate_trades(df, sym)
-            self.trades = trades
-            stats = self.calculate_stats(trades)
-            all_stats[sym] = stats
-            
-            print(f"   Trades: {stats['total_trades']}")
-            print(f"   Win Rate: {stats['win_rate']}%")
-            print(f"   Total P&L: ₹{stats['total_pnl']:,.2f}")
-            print(f"   Return: {stats['return_pct']:.2f}%")
-            
-        return all_stats
 
-# ── Command Line Interface ───────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+def generate_excel_report(all_trades: list):
+    """Generate Excel report with summary + charts."""
+    import os
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.chart import LineChart, Reference
+    from openpyxl.utils import get_column_letter
+
+    os.makedirs("logs", exist_ok=True)
+    wb   = Workbook()
+    thin = Side(style="thin", color="BDC3C7")
+    bdr  = Border(left=thin, right=thin, top=thin, bottom=thin)
+    ctr  = Alignment(horizontal="center", vertical="center")
+
+    def hdr(ws, row, col, val, bg="1E3A5F", fg="FFFFFF", sz=11):
+        c           = ws.cell(row=row, column=col, value=val)
+        c.font      = Font(name="Arial", size=sz, bold=True, color=fg)
+        c.fill      = PatternFill("solid", fgColor=bg)
+        c.alignment = ctr
+        c.border    = bdr
+
+    # ── Sheet 1: Summary ─────────────────────────────────────────────────────
+    ws1       = wb.active
+    ws1.title = "Summary"
+    ws1.sheet_view.showGridLines = False
+
+    ws1.merge_cells("A1:H1")
+    c           = ws1["A1"]
+    c.value     = "📊  RSI BOT — 1 YEAR BACKTEST REPORT"
+    c.font      = Font(name="Arial", size=16, bold=True, color="FFFFFF")
+    c.fill      = PatternFill("solid", fgColor="1E3A5F")
+    c.alignment = ctr
+    ws1.row_dimensions[1].height = 36
+
+    if not all_trades:
+        ws1["A2"] = "No trades generated in backtest period."
+        wb.save(REPORT_FILE)
+        print("  ⚠️  No trades found.")
+        return
+
+    df_t      = pd.DataFrame(all_trades)
+    wins      = df_t[df_t['result'] == 'WIN']
+    losses    = df_t[df_t['result'] == 'LOSS']
+    total_pnl = df_t['pnl'].sum()
+    win_rate  = len(wins) / len(df_t) * 100 if len(df_t) > 0 else 0
+    avg_win   = wins['pnl'].mean()   if len(wins)   > 0 else 0
+    avg_loss  = losses['pnl'].mean() if len(losses) > 0 else 0
+    tsl_saves = df_t[df_t['tsl_used'] == True]['result'].value_counts().get('WIN', 0)
+
+    stats = [
+        ("Total Trades",       len(df_t)),
+        ("Wins",               len(wins)),
+        ("Losses",             len(losses)),
+        ("Win Rate %",         f"{win_rate:.1f}%"),
+        ("Total P&L ₹",        f"₹{total_pnl:,.2f}"),
+        ("Avg Win ₹",          f"₹{avg_win:,.2f}"),
+        ("Avg Loss ₹",         f"₹{avg_loss:,.2f}"),
+        ("TSL Saves (wins)",   tsl_saves),
+        ("Return %",           f"{(total_pnl / INITIAL_CAPITAL * 100):.2f}%"),
+        ("Period",             "1 Year (2yr fetch, EMA-200 warmed up)"),
+        ("Instruments tested", df_t['symbol'].nunique()),
+        ("Strategy",           "RSI + MACD + Volume + EMA-200 + TSL"),
+    ]
+
+    ws1.row_dimensions[2].height = 10
+    for i, (label, val) in enumerate(stats, 3):
+        bg = "EBF5FB" if i % 2 == 0 else "FFFFFF"
+        for col, v in [(1, label), (2, val)]:
+            c           = ws1.cell(row=i, column=col, value=v)
+            c.font      = Font(name="Arial", size=11,
+                               bold=(col == 1),
+                               color="1E3A5F" if col == 1 else "2C3E50")
+            c.fill      = PatternFill("solid", fgColor=bg)
+            c.alignment = Alignment(
+                horizontal="left" if col == 1 else "center",
+                vertical="center"
+            )
+            c.border    = bdr
+        ws1.row_dimensions[i].height = 22
+    ws1.column_dimensions["A"].width = 32
+    ws1.column_dimensions["B"].width = 22
+
+    # ── Sheet 2: All Trades ───────────────────────────────────────────────────
+    ws2       = wb.create_sheet("All Trades")
+    ws2.sheet_view.showGridLines = False
+    ws2.freeze_panes = "A3"
+    ws2.merge_cells("A1:K1")
+    c           = ws2["A1"]
+    c.value     = "📋  ALL BACKTEST TRADES"
+    c.font      = Font(name="Arial", size=13, bold=True, color="FFFFFF")
+    c.fill      = PatternFill("solid", fgColor="2E86AB")
+    c.alignment = ctr
+    ws2.row_dimensions[1].height = 28
+
+    cols = [
+        ("Symbol", 9), ("Type", 10), ("Buy Date", 13), ("Sell Date", 13),
+        ("Buy ₹", 12), ("Sell ₹", 12), ("Qty", 7),
+        ("P&L ₹", 12), ("P&L %", 9), ("TSL", 7), ("Result", 10),
+    ]
+    for i, (h, w) in enumerate(cols, 1):
+        hdr(ws2, 2, i, h, bg="2E86AB")
+        ws2.column_dimensions[get_column_letter(i)].width = w
+    ws2.row_dimensions[2].height = 24
+
+    for nr, t in enumerate(all_trades, 3):
+        bg  = "F2F7FC" if nr % 2 == 0 else "FFFFFF"
+        bgf = PatternFill("solid", fgColor=bg)
+        row = [
+            t['symbol'].replace('.NS', '').replace('=F', '').replace('-USD', '/USD'),
+            t['itype'], t['buy_date'], t['sell_date'],
+            t['buy_price'], t['sell_price'], t['qty'],
+            t['pnl'], t['pnl_pct'],
+            "✅" if t['tsl_used'] else "—",
+            t['result'],
+        ]
+        for col, val in enumerate(row, 1):
+            c           = ws2.cell(row=nr, column=col, value=val)
+            c.font      = Font(name="Arial", size=10)
+            c.fill      = bgf
+            c.alignment = ctr
+            c.border    = bdr
+            if col == 8:
+                c.number_format = "₹#,##0.00"
+                c.font = Font(name="Arial", size=10, bold=True,
+                              color="1E8449" if t['pnl'] >= 0 else "922B21")
+            if col == 11:
+                if val == "WIN":
+                    c.font = Font(name="Arial", size=10, bold=True, color="1E8449")
+                    c.fill = PatternFill("solid", fgColor="D5F5E3")
+                else:
+                    c.font = Font(name="Arial", size=10, bold=True, color="922B21")
+                    c.fill = PatternFill("solid", fgColor="FADBD8")
+        ws2.row_dimensions[nr].height = 20
+
+    # ── Sheet 3: By Instrument ────────────────────────────────────────────────
+    ws3       = wb.create_sheet("By Instrument")
+    ws3.sheet_view.showGridLines = False
+    ws3.merge_cells("A1:H1")
+    c           = ws3["A1"]
+    c.value     = "🏆  PERFORMANCE BY INSTRUMENT"
+    c.font      = Font(name="Arial", size=13, bold=True, color="FFFFFF")
+    c.fill      = PatternFill("solid", fgColor="1ABC9C")
+    c.alignment = ctr
+    ws3.row_dimensions[1].height = 28
+
+    icols = [
+        ("Symbol", 14), ("Type", 11), ("Trades", 9), ("Wins", 7),
+        ("Losses", 8), ("Win Rate %", 12), ("Total P&L ₹", 14), ("Avg P&L ₹", 13),
+    ]
+    for i, (h, w) in enumerate(icols, 1):
+        hdr(ws3, 2, i, h, bg="1ABC9C")
+        ws3.column_dimensions[get_column_letter(i)].width = w
+    ws3.row_dimensions[2].height = 24
+
+    by_sym = df_t.groupby('symbol')
+    nr     = 3
+    for sym, grp in sorted(by_sym, key=lambda x: x[1]['pnl'].sum(), reverse=True):
+        w   = len(grp[grp['result'] == 'WIN'])
+        l   = len(grp[grp['result'] == 'LOSS'])
+        wr  = round(w / len(grp) * 100, 1)
+        tp  = round(grp['pnl'].sum(), 2)
+        ap  = round(grp['pnl'].mean(), 2)
+        bg  = "F2F7FC" if nr % 2 == 0 else "FFFFFF"
+        bgf = PatternFill("solid", fgColor=bg)
+        row = [
+            sym.replace('.NS', '').replace('=F', '').replace('-USD', '/USD'),
+            grp['itype'].iloc[0], len(grp), w, l, wr, tp, ap
+        ]
+        for col, val in enumerate(row, 1):
+            c           = ws3.cell(row=nr, column=col, value=val)
+            c.font      = Font(name="Arial", size=10)
+            c.fill      = bgf
+            c.alignment = ctr
+            c.border    = bdr
+            if col in [7, 8]:
+                c.number_format = "₹#,##0.00"
+                c.font = Font(name="Arial", size=10, bold=True,
+                              color="1E8449" if val >= 0 else "922B21")
+        ws3.row_dimensions[nr].height = 20
+        nr += 1
+
+    # ── Sheet 4: P&L Chart ────────────────────────────────────────────────────
+    ws4       = wb.create_sheet("P&L Chart")
+    ws4.sheet_view.showGridLines = False
+    ws4["A1"] = "Trade #"
+    ws4["B1"] = "Cumulative P&L"
+    cum_pnl   = 0
+    for i, t in enumerate(all_trades, 2):
+        cum_pnl += t['pnl']
+        ws4.cell(row=i, column=1, value=i - 1)
+        ws4.cell(row=i, column=2, value=round(cum_pnl, 2))
+
+    chart              = LineChart()
+    chart.title        = "Cumulative P&L"
+    chart.style        = 10
+    chart.y_axis.title = "P&L (₹)"
+    chart.x_axis.title = "Trade #"
+    data = Reference(ws4, min_col=2, min_row=1, max_row=len(all_trades) + 1)
+    chart.add_data(data, titles_from_data=True)
+    chart.width  = 20
+    chart.height = 12
+    ws4.add_chart(chart, "D2")
+
+    ws1.sheet_properties.tabColor = "1E3A5F"
+    ws2.sheet_properties.tabColor = "2E86AB"
+    ws3.sheet_properties.tabColor = "1ABC9C"
+    ws4.sheet_properties.tabColor = "E74C3C"
+
+    wb.save(REPORT_FILE)
+    print(f"  ✅ Report saved: {REPORT_FILE}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main
+# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="RSI Strategy Backtester")
-    parser.add_argument('--symbol', type=str, help='Single symbol to test (e.g., BTC-USD)')
-    parser.add_argument('--start', type=str, help='Start date (YYYY-MM-DD)')
-    parser.add_argument('--end', type=str, help='End date (YYYY-MM-DD)')
-    parser.add_argument('--interval', type=str, choices=['1h','4h','1d'], help='Candle interval')
-    args = parser.parse_args()
-    
-    if args.start: BacktestConfig.START_DATE = args.start
-    if args.end: BacktestConfig.END_DATE = args.end
-    if args.interval: BacktestConfig.INTERVAL = args.interval
-    
-    backtester = RSIBacktester()
-    backtester.run(symbol=args.symbol)
+    print("=" * 60)
+    print("  RSI BOT — BACKTESTING ENGINE")
+    print(f"  Fetch: 2yr | Trade window: last 1yr | EMA-200 warmed up")
+    print(f"  Instruments: {len(WATCHLIST)}")
+    print("=" * 60)
 
+    all_trades = []
+    for i, symbol in enumerate(WATCHLIST, 1):
+        print(f"  [{i:>3}/{len(WATCHLIST)}] {symbol:<20}", end=" ")
+        trades = backtest_symbol(symbol)
+        all_trades.extend(trades)
+        print(f"→ {len(trades)} trades")
 
+    print(f"\n  Total trades: {len(all_trades)}")
+    print(f"  Generating Excel report...")
+    generate_excel_report(all_trades)
 
-
-
+    if all_trades:
+        df   = pd.DataFrame(all_trades)
+        wins = df[df['result'] == 'WIN']
+        print(f"\n  Win Rate : {len(wins) / len(df) * 100:.1f}%")
+        print(f"  Total P&L: ₹{df['pnl'].sum():,.2f}")
+        print(f"  Return   : {df['pnl'].sum() / CAPITAL * 100:.2f}%")
+    print("=" * 60)
