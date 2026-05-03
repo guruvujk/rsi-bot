@@ -14,7 +14,12 @@
 #   9. Duplicate Tata Steel GTT issue fixed in scan logic
 #  10. Added STOP_LOSS breach check BEFORE new BUY (avoid buying falling assets)
 
-import csv, os, time, threading, schedule, json
+import csv
+import os
+import time
+import threading
+import schedule
+import json
 from datetime import datetime
 import pytz
 import requests
@@ -26,13 +31,13 @@ from config import (
     get_instrument_type, get_usd_inr_rate, SCAN_INTERVAL_STOCKS, SCAN_INTERVAL_CRYPTO,
     SCAN_INTERVAL_FOREX, SCAN_INTERVAL_COMMODITY,
 )
-from rsi_engine      import fetch_ohlcv, get_signal
+from rsi_engine import fetch_ohlcv, get_signal
 from telegram_alerts import send_telegram
-from dashboard       import start_dashboard, bot_state as state
-from paper_trade     import PaperTrader
-from db_state        import load_trades, load_state as db_load_state
+from dashboard import start_dashboard, bot_state as state
+from paper_trade import PaperTrader
+from db_state import load_trades, load_state as db_load_state
 
-IST        = pytz.timezone("Asia/Kolkata")
+IST = pytz.timezone("Asia/Kolkata")
 STATE_FILE = "bot_state.json"
 
 # ── Delisted / bad symbols to skip silently ───────────────────────────────────
@@ -65,15 +70,15 @@ def save_state(trader: PaperTrader):
         stats = trader.stats()
         from db_state import load_trades as _lt
         data = {
-            "capital"      : trader.capital,
-            "positions"    : trader.positions,
-            "trades"       : _lt(),
-            "total_trades" : stats.get("total_trades", 0),
-            "wins"         : stats.get("wins", 0),
-            "losses"       : stats.get("losses", 0),
-            "win_rate"     : stats.get("win_rate", 0),
-            "realised_pnl" : stats.get("total_pnl", 0),
-            "return_pct"   : stats.get("return_pct", 0),
+            "capital": trader.capital,
+            "positions": trader.positions,
+            "trades": _lt(),
+            "total_trades": stats.get("total_trades", 0),
+            "wins": stats.get("wins", 0),
+            "losses": stats.get("losses", 0),
+            "win_rate": stats.get("win_rate", 0),
+            "realised_pnl": stats.get("total_pnl", 0),
+            "return_pct": stats.get("return_pct", 0),
         }
         with open(STATE_FILE, "w") as f:
             json.dump(data, f, indent=2, default=str)
@@ -108,12 +113,12 @@ def load_state(trader: PaperTrader):
         init_db()
         data = db_load()
         if data:
-            trader.capital   = float(data.get("capital", CAPITAL))
+            trader.capital = float(data.get("capital", CAPITAL))
             trader.positions = data.get("positions", {})
             # ── Always rebuild trades from DB trades table ──
             try:
                 stored_trades = db_load_trades()
-                trader.trades   = [t for t in stored_trades if t.get("action") == "SELL"]
+                trader.trades = [t for t in stored_trades if t.get("action") == "SELL"]
                 print(f"  [State] Restored from DB — "
                       f"Capital: ₹{trader.capital:,.0f} | "
                       f"Positions: {len(trader.positions)} | "
@@ -129,9 +134,9 @@ def load_state(trader: PaperTrader):
     try:
         with open(STATE_FILE) as f:
             data = json.load(f)
-        trader.capital   = float(data.get("capital", CAPITAL))
+        trader.capital = float(data.get("capital", CAPITAL))
         trader.positions = data.get("positions", {})
-        trader.trades    = []   # ← don't restore from JSON, DB is source of truth
+        trader.trades = []   # ← don't restore from JSON, DB is source of truth
         print(f"  [State] Restored from file — Capital: ₹{trader.capital:,.0f}")
     except Exception as e:
         print(f"  [State] Load failed (starting fresh): {e}")
@@ -147,13 +152,13 @@ def get_adaptive_sl(itype: str) -> float:
     Crypto is more volatile → wider SL
     """
     return {
-        "FOREX"    : 0.008,   # 0.8% — forex moves are tiny
-        "STOCK"    : 0.020,   # 2%
-        "INDEX"    : 0.015,   # 1.5%
-        "ETF"      : 0.015,   # 1.5%
-        "COMMODITY": 0.025,   # 2.5%
-        "CRYPTO"   : 0.040,   # 4% — crypto is volatile
-        "US_STOCK" : 0.025,   # 2.5%
+        "FOREX": 0.008,   # 0.8% — forex moves are tiny
+        "STOCK": 0.020,   # 2%
+        "INDEX": 0.015,   # 1.5%
+        "ETF": 0.015,     # 1.5%
+        "COMMODITY": 0.025,  # 2.5%
+        "CRYPTO": 0.040,  # 4% — crypto is volatile
+        "US_STOCK": 0.025,   # 2.5%
     }.get(itype, STOP_LOSS_PCT)
 
 
@@ -162,13 +167,13 @@ def get_adaptive_tp(itype: str) -> float:
     Return adaptive take-profit % based on instrument type.
     """
     return {
-        "FOREX"    : 0.006,   # 0.6% — realistic forex target
-        "STOCK"    : 0.030,   # 3%
-        "INDEX"    : 0.020,   # 2%
-        "ETF"      : 0.020,   # 2%
+        "FOREX": 0.006,   # 0.6% — realistic forex target
+        "STOCK": 0.030,   # 3%
+        "INDEX": 0.020,   # 2%
+        "ETF": 0.020,     # 2%
         "COMMODITY": 0.030,   # 3%
-        "CRYPTO"   : 0.050,   # 5%
-        "US_STOCK" : 0.030,   # 3%
+        "CRYPTO": 0.050,  # 5%
+        "US_STOCK": 0.030,   # 3%
     }.get(itype, TARGET_PCT)
 
 
@@ -181,10 +186,10 @@ def calc_qty(symbol: str, price: float, capital: float, itype: str) -> int:
     Always converts USD prices to INR before dividing.
     """
     from config import get_usd_inr_rate
-    
+
     # Convert price to INR for correct sizing
     if "-USD" in symbol or symbol in ("EURUSD=X", "GBPUSD=X", "AUDUSD=X",
-                                       "USDCAD=X", "NZDUSD=X", "USDCHF=X"):
+                                      "USDCAD=X", "NZDUSD=X", "USDCHF=X"):
         price_inr = price * get_usd_inr_rate()
     elif "=X" in symbol:
         # Forex cross rates — price is already in base currency units
@@ -196,10 +201,10 @@ def calc_qty(symbol: str, price: float, capital: float, itype: str) -> int:
 
     # Max allocation: smaller of RISK_PER_TRADE or MAX_CAPITAL_PER_TRADE
     max_alloc = min(capital * RISK_PER_TRADE, MAX_CAPITAL_PER_TRADE)
-    
+
     if price_inr <= 0:
         return 0
-    
+
     qty = int(max_alloc / price_inr)
     return max(1, qty)
 
@@ -211,7 +216,7 @@ pt = PaperTrader(CAPITAL)
 trader = pt
 state = db_load_state()
 if state:
-    trader.capital   = state.get("capital", trader.initial_capital)
+    trader.capital = state.get("capital", trader.initial_capital)
     trader.positions = state.get("positions", {})
 
 # ── CRITICAL: Rebuild trades from DB ─────────────────────────────────────────
@@ -223,15 +228,15 @@ print(f"  ✅ Open positions: {list(trader.positions.keys())}")
 
 def patch_old_positions(trader):
     for symbol, pos in trader.positions.items():
-        itype  = get_instrument_type(symbol)
+        itype = get_instrument_type(symbol)
         sl_pct = get_adaptive_sl(itype)
         tp_pct = get_adaptive_tp(itype)
-        bp     = pos.get("buy_price", 0)
+        bp = pos.get("buy_price", 0)
         if bp > 0:
-            pos["stop_loss"]    = round(bp * (1 - sl_pct), 6)
-            pos["target"]       = round(bp * (1 + tp_pct), 6)
-            pos["highest_price"]= pos.get("highest_price", bp)  # ← ADD
-            pos["tsl_active"]   = pos.get("tsl_active", False)  # ← ADD
+            pos["stop_loss"] = round(bp * (1 - sl_pct), 6)
+            pos["target"] = round(bp * (1 + tp_pct), 6)
+            pos["highest_price"] = pos.get("highest_price", bp)  # ← ADD
+            pos["tsl_active"] = pos.get("tsl_active", False)  # ← ADD
     print(f"  [Patch] Recalculated SL/TP on {len(trader.positions)} positions")
 
 patch_old_positions(pt)
@@ -240,52 +245,58 @@ trades = pt.trades
 
 # ─────────────────────────────────────────────────────────────────────────────
 INSTRUMENT_EMOJI = {
-    "STOCK"    : "🏦",
-    "INDEX"    : "📈",
+    "STOCK": "🏦",
+    "INDEX": "📈",
     "COMMODITY": "💰",
-    "FOREX"    : "💱",
-    "CRYPTO"   : "🪙",
-    "ETF"      : "📊",
-    "US_STOCK" : "🌍",
+    "FOREX": "💱",
+    "CRYPTO": "🪙",
+    "ETF": "📊",
+    "US_STOCK": "🌍",
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Market-hours gate
 # ─────────────────────────────────────────────────────────────────────────────
 def is_tradeable(symbol):
-    now   = datetime.now(IST)
+    now = datetime.now(IST)
     itype = get_instrument_type(symbol)
-    wd    = now.weekday()
-    t     = now.hour * 60 + now.minute
+    wd = now.weekday()
+    t = now.hour * 60 + now.minute
 
     if itype in ("STOCK", "INDEX", "ETF"):
-        if wd >= 5: return False
+        if wd >= 5:
+            return False
         return 555 <= t <= 930
 
     if itype == "COMMODITY":
-        if wd >= 5: return False
+        if wd >= 5:
+            return False
         return 540 <= t <= 1410
 
     if itype == "FOREX":
-        if wd == 5 and t >= 120:  return False
-        if wd == 6 and t < 1200:  return False
+        if wd == 5 and t >= 120:
+            return False
+        if wd == 6 and t < 1200:
+            return False
         return True
 
     if itype == "CRYPTO":
         return True
 
     if itype == "US_STOCK":
-        if wd >= 5: return False
+        if wd >= 5:
+            return False
         return t >= 1140 or t <= 90
 
     return False
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Formatting helpers
 # ─────────────────────────────────────────────────────────────────────────────
 def format_symbol(symbol):
-    return (symbol.replace(".NS","").replace("=X","")
-                  .replace("=F","").replace("-USD","/USD"))
+    return (symbol.replace(".NS", "").replace("=X", "")
+                  .replace("=F", "").replace("-USD", "/USD"))
 
 def format_price(symbol, price):   # FIX: removed stray comma that caused SyntaxError
     if "USD" in symbol:
@@ -293,6 +304,7 @@ def format_price(symbol, price):   # FIX: removed stray comma that caused Syntax
     if "=X" in symbol:
         return f"{price:,.4f}"
     return f"₹{price:,.2f}"
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Dashboard sync
@@ -302,18 +314,18 @@ def sync_dashboard():
     if state is None:
         from dashboard import bot_state as state
     stats = pt.stats()
-    state['capital']       = stats['capital']
-    state['pnl']           = stats['total_pnl']
-    state['realised_pnl']  = stats['total_pnl']
-    state['open_pnl']      = stats['open_pnl']
+    state['capital'] = stats['capital']
+    state['pnl'] = stats['total_pnl']
+    state['realised_pnl'] = stats['total_pnl']
+    state['open_pnl'] = stats['open_pnl']
     state['portfolio_val'] = stats['portfolio_val']
-    total_gain             = stats['total_pnl'] + stats['open_pnl']
-    state['return_pct']    = round((total_gain / CAPITAL) * 100, 2)
-    state['win_rate']      = stats['win_rate']
-    state['total_trades']  = stats['total_trades']
-    state['trades']        = pt.trades
-    state['wins']          = stats['wins']
-    state['losses']        = stats['losses']
+    total_gain = stats['total_pnl'] + stats['open_pnl']
+    state['return_pct'] = round((total_gain / CAPITAL) * 100, 2)
+    state['win_rate'] = stats['win_rate']
+    state['total_trades'] = stats['total_trades']
+    state['trades'] = pt.trades
+    state['wins'] = stats['wins']
+    state['losses'] = stats['losses']
     from config import get_usd_inr_rate
     rate = get_usd_inr_rate()
     state['positions'] = {}
@@ -330,16 +342,17 @@ def sync_dashboard():
             'pnl': pnl,
             'type': itype
         }
-    state['watchlist']  = state.get('watchlist', {})
+    state['watchlist'] = state.get('watchlist', {})
     state['paper_mode'] = True
     state['paper_mode'] = True
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Core scan logic — one symbol at a time
 # ─────────────────────────────────────────────────────────────────────────────
 def scan_symbol(symbol, current_prices):
 
-    raw = symbol.replace(".NS","").replace("=X","").replace("=F","")
+    raw = symbol.replace(".NS", "").replace("=X", "").replace("=F", "")
     if raw in SKIP_SYMBOLS or symbol in SKIP_SYMBOLS:
         return
 
@@ -379,36 +392,38 @@ def scan_symbol(symbol, current_prices):
 
         # ── EXIT logic ────────────────────────────────────────────────────
         if symbol in pt.positions:
-            pos     = pt.positions[symbol]
+            pos = pt.positions[symbol]
             chg_pct = (price - pos['buy_price']) / pos['buy_price']
             # ── TRAILING STOP LOSS ────────────────────────────────
-            tp_pct   = get_adaptive_tp(itype)
-            bp       = pos['buy_price']
-            half_tp  = tp_pct * 0.5
+            tp_pct = get_adaptive_tp(itype)
+            bp = pos['buy_price']
+            half_tp = tp_pct * 0.5
 
-        # Update highest price
-        if price > pos.get('highest_price', bp):
-            pos['highest_price'] = price
+            # Update highest price
+            if price > pos.get('highest_price', bp):
+                pos['highest_price'] = price
 
-        # Activate TSL when 50% of target reached
-        if not pos.get('tsl_active') and chg_pct >= half_tp:
-            pos['tsl_active'] = True
-            print(f"    → TSL ACTIVATED: {format_symbol(symbol)}")
+            # Activate TSL when 50% of target reached
+            if not pos.get('tsl_active') and chg_pct >= half_tp:
+                pos['tsl_active'] = True
+                print(f"    → TSL ACTIVATED: {format_symbol(symbol)}")
 
-        # Trail: lock in 50% of profit above entry
-        if pos.get('tsl_active'):
-            profit    = pos['highest_price'] - bp
-            tsl_price = bp + (profit * 0.5)
-            if tsl_price > pos.get('stop_loss', 0):
-                pos['stop_loss'] = round(tsl_price, 4)
-                print(f"    → TSL updated: {format_symbol(symbol)} "
-                      f"SL → {format_price(symbol, tsl_price)}")
+            # Trail: lock in 50% of profit above entry
+            if pos.get('tsl_active'):
+                profit = pos['highest_price'] - bp
+                tsl_price = bp + (profit * 0.5)
+                if tsl_price > pos.get('stop_loss', 0):
+                    pos['stop_loss'] = round(tsl_price, 4)
+                    print(f"    → TSL updated: {format_symbol(symbol)} "
+                          f"SL → {format_price(symbol, tsl_price)}")
 
             # FIX: adaptive TP per instrument type
             tp = get_adaptive_tp(itype)
             reason = None
-            if   chg_pct >= tp:      reason = "TARGET HIT 🎯"
-            elif signal  == "SELL":  reason = "RSI SELL 📉"
+            if chg_pct >= tp:
+                reason = "TARGET HIT 🎯"
+            elif signal == "SELL":
+                reason = "RSI SELL 📉"
 
             if reason:
                 ok, pnl = pt.sell(symbol, price, rsi_val, reason)
@@ -425,7 +440,7 @@ def scan_symbol(symbol, current_prices):
                         f"📈 Total P&L: ₹{pt.stats()['total_pnl']:,.2f}",
                         "SELL"
                     )
-                    clean_reason = reason.replace("🎯","").replace("📉","").strip()
+                    clean_reason = reason.replace("🎯", "").replace("📉", "").strip()
                     speak_alert(
                         f"{clean_reason} on {sym_d}. "
                         f"{'Profit' if pnl >= 0 else 'Loss'} "
@@ -433,20 +448,19 @@ def scan_symbol(symbol, current_prices):
                     )
                     print(f"    → PAPER SELL | {reason} | P&L ₹{pnl:,.2f}")
                     trade = {
-                        'time'  : datetime.now(IST).strftime('%H:%M'),
+                        'time': datetime.now(IST).strftime('%H:%M'),
                         'symbol': symbol,
                         'action': 'SELL',
-                        'price' : price,
-                        'qty'   : pos['qty'],
-                        'rsi'   : rsi_val,
-                        'pnl'   : round(pnl, 2),
+                        'price': price,
+                        'qty': pos['qty'],
+                        'rsi': rsi_val,
+                        'pnl': round(pnl, 2),
                         'reason': reason,
-                        'date'  : datetime.now(IST).strftime('%d-%b-%Y'),
+                        'date': datetime.now(IST).strftime('%d-%b-%Y'),
                     }
                     trades.append(trade)
-                    save_state(pt)  
+                    save_state(pt)
                     save_trade(trade)
-
 
         # ── ENTRY logic ───────────────────────────────────────────────────
         elif (signal == "BUY"
@@ -485,7 +499,7 @@ def scan_symbol(symbol, current_prices):
             # FIX: use corrected qty calculation
             sl_pct = get_adaptive_sl(itype)
             tp_pct = get_adaptive_tp(itype)
-            qty    = calc_qty(symbol, price, pt.capital, itype)
+            qty = calc_qty(symbol, price, pt.capital, itype)
 
             if qty <= 0:
                 print(f"    → Skip {sym_d}: qty=0 (price too high for budget)")
@@ -493,7 +507,7 @@ def scan_symbol(symbol, current_prices):
 
             from config import get_usd_inr_rate
             price_inr = price * get_usd_inr_rate() if ("-USD" in symbol) else price
-            cost      = qty * price_inr
+            cost = qty * price_inr
 
             if cost > pt.capital:
                 print(f"    → Skip {sym_d}: insufficient capital"
@@ -528,30 +542,30 @@ def scan_symbol(symbol, current_prices):
                       f" | SL:{sl_pct*100:.1f}% TP:{tp_pct*100:.1f}%")
 
                 trade = {
-                    'time'  : datetime.now(IST).strftime('%H:%M'),
+                    'time': datetime.now(IST).strftime('%H:%M'),
                     'symbol': symbol,
                     'action': 'BUY',
-                    'price' : round(price_inr, 2),
-                    'qty'   : qty,
-                    'rsi'   : rsi_val,
-                    'pnl'   : None,
+                    'price': round(price_inr, 2),
+                    'qty': qty,
+                    'rsi': rsi_val,
+                    'pnl': None,
                     'reason': 'RSI BUY',
-                    'date'  : datetime.now(IST).strftime('%d-%b-%Y'),
+                    'date': datetime.now(IST).strftime('%d-%b-%Y'),
                     'symbol': symbol,
                 }
                 trades.append(trade)
                 save_trade(trade)
-                save_state(pt)  
-
+                save_state(pt)
 
     except Exception as e:
         print(f"  [Error] {format_symbol(symbol)}: {e}")
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Full market scan
 # ─────────────────────────────────────────────────────────────────────────────
 def scan():
-    now    = datetime.now(IST)
+    now = datetime.now(IST)
     active = [s for s in WATCHLIST if is_tradeable(s)]
 
     print(f"\n{'═'*62}")
@@ -601,6 +615,7 @@ def scan():
           f"  P&L:₹{s['total_pnl']:,.2f}"
           f"  Open:₹{s['open_pnl']:,.2f}")
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Scheduled alerts
 # ─────────────────────────────────────────────────────────────────────────────
@@ -610,13 +625,20 @@ def morning_briefing():
         return
 
     active = []
-    if STOCKS["enabled"]:      active.append("🏦 NSE Stocks")
-    if INDICES["enabled"]:     active.append("📈 Indices")
-    if COMMODITIES["enabled"]: active.append("💰 Commodities")
-    if FOREX["enabled"]:       active.append("💱 Forex")
-    if CRYPTO["enabled"]:      active.append("🪙 Crypto")
-    if ETFS["enabled"]:        active.append("📊 ETFs")
-    if US_STOCKS["enabled"]:   active.append("🌍 US Stocks")
+    if STOCKS["enabled"]:
+        active.append("🏦 NSE Stocks")
+    if INDICES["enabled"]:
+        active.append("📈 Indices")
+    if COMMODITIES["enabled"]:
+        active.append("💰 Commodities")
+    if FOREX["enabled"]:
+        active.append("💱 Forex")
+    if CRYPTO["enabled"]:
+        active.append("🪙 Crypto")
+    if ETFS["enabled"]:
+        active.append("📊 ETFs")
+    if US_STOCKS["enabled"]:
+        active.append("🌍 US Stocks")
     send_telegram(
         f"🌅 *Good Morning!*\n{'─'*24}\n"
         f"Date    : {datetime.now(IST).strftime('%d %b %Y')}\n"
@@ -632,6 +654,7 @@ def morning_briefing():
         voice="Priya"
     )
 
+
 def nse_eod_close():
     nse_pos = {s: p for s, p in pt.positions.items()
                if get_instrument_type(s) in ("STOCK", "INDEX")}
@@ -645,6 +668,7 @@ def nse_eod_close():
             f"NSE closing in 5 minutes. Open positions: {syms}.",
             voice="Priya"
         )
+
 
 def nse_eod_summary():
     s = pt.stats()
@@ -664,6 +688,7 @@ def nse_eod_summary():
         voice="Raj"
     )
 
+
 def crypto_summary():
     crypto_pos = {s: p for s, p in pt.positions.items()
                   if get_instrument_type(s) == "CRYPTO"}
@@ -681,6 +706,7 @@ def crypto_summary():
             voice="Raj"
         )
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Scheduler loop
 # ─────────────────────────────────────────────────────────────────────────────
@@ -693,6 +719,7 @@ def run_scheduler():
     while True:
         schedule.run_pending()
         time.sleep(1)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point
@@ -722,16 +749,12 @@ if __name__ == "__main__":
 
     active_names = [
         n for n, g in [
-            ("NSE Stocks",  STOCKS),   ("Indices",   INDICES),
+            ("NSE Stocks",  STOCKS), ("Indices",   INDICES),
             ("Commodities", COMMODITIES), ("Forex",  FOREX),
-            ("Crypto",      CRYPTO),   ("ETFs",      ETFS),
+            ("Crypto",      CRYPTO), ("ETFs",      ETFS),
             ("US Stocks",   US_STOCKS),
         ] if g["enabled"]
     ]
-
-   
-
-   
 
     threading.Thread(target=start_dashboard, daemon=True).start()
     scan()
