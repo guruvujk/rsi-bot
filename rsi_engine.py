@@ -104,15 +104,16 @@ def get_signal(df: pd.DataFrame) -> tuple:
     close = df['Close'].squeeze()
 
     # Need at least 30 bars for meaningful indicators
+    price     = _safe_float(close.iloc[-1])
+    volume_ok = True
     if len(close) < 30:
-        price = _safe_float(close.iloc[-1])
-        volume_ok = True
+            return "HOLD", 50.0, price, {}
     if 'Volume' in df.columns:
         vol        = df['Volume'].squeeze()
         vol_avg    = _safe_float(vol.rolling(20).mean().iloc[-1])
         vol_curr   = _safe_float(vol.iloc[-1])
         volume_ok  = vol_curr > vol_avg if vol_avg > 0 else True
-        return "HOLD", 50.0, price, {}
+        
 
     # ── RSI ──────────────────────────────────────────────────────────────────
     rsi     = compute_rsi(close)
