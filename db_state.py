@@ -7,20 +7,34 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 print(f"[DB] DATABASE_URL set: {bool(DATABASE_URL)}")
 
 def get_conn():
-    import re
+    import re, time
     url = DATABASE_URL
     match = re.match(r'(?:postgresql|postgres)://([^:]+):([^@]+)@([^/:]+)(?::(\d+))?/([^?]+)', url)
-    if match:
-        user, password, host, port, dbname = match.groups()
-        return psycopg2.connect(
-            host=host,
-            port=int(port) if port else 5432,
-            user=user,
-            password=password,
-            dbname=dbname,
-            sslmode='require'
-        )
-    return psycopg2.connect(url)
+    for attempt in range(3):
+        try:
+            if match:
+                user, password, host, port, dbname = match.groups()
+                conn = psycopg2.connect(
+                    host=host,
+                    port=int(port) if port else 5432,
+                    user=user,
+                    password=password,
+                    dbname=dbname,
+                    sslmode='require',
+                    connect_timeout=10,
+                    keepalives=1,
+                    keepalives_idle=30,
+                    keepalives_interval=10,
+                    keepalives_count=3,
+                )
+            else:
+                conn = psycopg2.connect(url, connect_timeout=10)
+            return conn
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(2)
+            else:
+                raise e
 
 def init_db():
     if not DATABASE_URL:
