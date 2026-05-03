@@ -280,7 +280,7 @@ def format_symbol(symbol):
                   .replace("=F", "").replace("-USD", "/USD"))
 
 def format_price(symbol, price):
-    if "USD" in symbol:
+    if "USD" in symbol or "=F" in symbol:
         return f"${price:,.2f}"
     if "=X" in symbol:
         return f"{price:,.4f}"
