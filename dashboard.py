@@ -22,7 +22,7 @@ except Exception as _e:
 bot_state = {
     "capital"      : _saved.get("capital", 100000) if _saved else 100000,
     "positions"    : _saved.get("positions", {}) if _saved else {},
-    "trades"       : _db_load_trades() if True else [],
+    "trades"       :  [],
     "pnl"          : _saved.get("pnl", 0.0) if _saved else 0.0,
     "open_pnl"     : _saved.get("open_pnl", 0.0) if _saved else 0.0,
     "realised_pnl" : _saved.get("realised_pnl", 0.0) if _saved else 0.0,
