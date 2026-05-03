@@ -382,9 +382,9 @@ def scan_symbol(symbol, current_prices):
             pos     = pt.positions[symbol]
             chg_pct = (price - pos['buy_price']) / pos['buy_price']
             # ── TRAILING STOP LOSS ────────────────────────────────
-        tp_pct   = get_adaptive_tp(itype)
-        bp       = pos['buy_price']
-        half_tp  = tp_pct * 0.5
+            tp_pct   = get_adaptive_tp(itype)
+            bp       = pos['buy_price']
+            half_tp  = tp_pct * 0.5
 
         # Update highest price
         if price > pos.get('highest_price', bp):
