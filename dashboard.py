@@ -270,7 +270,8 @@ DASHBOARD_HTML = """
       const rsiPct   = Math.min(v.rsi, 100);
       const bClass   = v.signal === 'BUY'  ? 'badge-buy'
                      : v.signal === 'SELL' ? 'badge-sell' : 'badge-hold';
-      const isUsd = sym.includes('-USD') || sym.includes('/USD') || sym.includes('=F');
+      const isUsd = sym.includes('-USD') || sym.includes('/USD') || sym.includes('=F') || 
+      ['AAPL','MSFT','GOOGL','AMZN','META','NVDA','TSLA','NFLX','JPM','BAC','GS','V','MA','JNJ','PFE','UNH','WMT','KO','MCD','X   OM','CVX','SPY','QQQ','GLD'].includes(sym);
       const priceStr = v.price
       ? (isUsd ? '$' + Number(v.price).toLocaleString('en-US', {maximumFractionDigits:2})
            : fmt(v.price))
@@ -305,7 +306,7 @@ DASHBOARD_HTML = """
       phtml += `<tr>
         <td style="font-weight:500;">${sym.replace('.NS','')}</td>
         <td>${p.qty}</td>
-        <td>${sym.includes('-USD') || sym.includes('=F') ? '$'+Number(p.buy_price).toLocaleString('en-US',{maximumFractionDigits:2}) : fmt(p.buy_price)}</td>
+        <td>${sym.includes('-USD') || sym.includes('=F') || ['AAPL','MSFT','GOOGL','AMZN','META','NVDA','TSLA','NFLX','JPM','BAC','GS','V','MA','JNJ','PFE','UNH','WMT','KO','MCD','XOM','CVX','SPY','QQQ','GLD'].includes(sym) ? '$'+Number(p.buy_price).toLocaleString('en-US',{maximumFractionDigits:2}) : fmt(p.buy_price)}</td>
         <td>${sym.includes('-USD') || sym.includes('=F') ? '$'+Number(ltp).toLocaleString('en-US',{maximumFractionDigits:2}) : fmt(ltp)}</td>
         <td style="color:${upnlColor};font-weight:600;">₹${Number(upnl).toLocaleString('en-IN')}</td>
         <td>${tslBadge}</td>
