@@ -31,15 +31,13 @@ USD_INR_RATE  = 85.5
 
 
 def get_usd_inr_rate() -> float:
-    """Return the USD to INR conversion rate."""
+    """Return USD to INR rate — uses requests fallback, no yfinance."""
     try:
-        import yfinance as yf
-        data = yf.download("USDINR=X", period="1d", interval="1m", progress=False)
-        if not data.empty:
-            return float(data["Close"].iloc[-1])
+        import requests
+        r = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=5)
+        return float(r.json()["rates"]["INR"])
     except Exception:
-        pass
-    return USD_INR_RATE   # fallback
+        return USD_INR_RATE  # fallback to 85.5   # fallback
 
 # ── Persistence ──────────────────────────────────────
 SAVE_POSITIONS       = True
@@ -324,3 +322,5 @@ def get_instrument_type(symbol: str) -> str:
 # WATCHLIST SUMMARY
 # Total: ~107 instruments (BTC-INR, ETH-INR removed from CRYPTO)
 # ════════════════════════════════════════════════════
+
+

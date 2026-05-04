@@ -20,6 +20,8 @@ from telegram_alerts import send_telegram
 from dashboard import start_dashboard, bot_state as state
 from paper_trade import PaperTrader
 from db_state import load_trades, load_state as db_load_state
+from auto_trade_routes import auto_trade_bp
+from auto_trade_engine  import start_scheduler as start_auto_scheduler
 
 IST = pytz.timezone("Asia/Kolkata")
 STATE_FILE = "bot_state.json"
@@ -731,6 +733,11 @@ if __name__ == "__main__":
     print(f"\n  Total : {len(WATCHLIST)} instruments"
           f" | Max pos: {MAX_POSITIONS}")
     print("=" * 62)
+
+    from dashboard import app as flask_app
+    flask_app.register_blueprint(auto_trade_bp)
+    start_auto_scheduler()
+    print('  [AutoTrade] Engine started')
 
     threading.Thread(target=start_dashboard, daemon=True).start()
     scan()
