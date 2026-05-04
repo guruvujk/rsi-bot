@@ -1,11 +1,61 @@
 {
-  "capital": 100000,
-  "positions": {},
-  "trades": [],
+  "capital": 94343.4,
+  "positions": {
+    "AAPL": {
+      "qty": 10,
+      "buy_price": 280.15,
+      "buy_time": "18:30",
+      "itype": "US_STOCK",
+      "stop_loss": 273.14625,
+      "target": 288.5545,
+      "highest_price": 280.15,
+      "tsl_active": false
+    },
+    "NFLX": {
+      "qty": 31,
+      "buy_price": 92.1,
+      "buy_time": "18:30",
+      "itype": "US_STOCK",
+      "stop_loss": 89.7975,
+      "target": 94.863,
+      "highest_price": 92.1,
+      "tsl_active": false
+    }
+  },
+  "trades": [
+    {
+      "date": "03-May-2026",
+      "time": "00:00",
+      "symbol": "AAPL",
+      "action": "BUY",
+      "price": 280.15,
+      "buy_price": 280.15,
+      "sell_price": "",
+      "qty": 10,
+      "rsi": 40.4,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "03-May-2026",
+      "time": "00:00",
+      "symbol": "NFLX",
+      "action": "BUY",
+      "price": 92.1,
+      "buy_price": 92.1,
+      "sell_price": "",
+      "qty": 31,
+      "rsi": 38.1,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    }
+  ],
   "total_trades": 0,
   "wins": 0,
   "losses": 0,
   "win_rate": 0,
   "realised_pnl": 0,
-  "return_pct": 0.0
+  "return_pct": -5.66
 }
