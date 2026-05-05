@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, jsonify
+﻿from flask import Flask, render_template_string, request, jsonify
 from flask_socketio import SocketIO
 import threading, time
 
@@ -291,12 +291,32 @@ DASHBOARD_HTML = """
     document.getElementById('watchlist-body').innerHTML =
       whtml || '<tr><td colspan="4" class="empty-msg">Waiting for scan...</td></tr>';
 
-    // Open Positions
-    const pos   = d.positions || {};
-    const pkeys = Object.keys(pos);
-    document.getElementById('pos-count').textContent = pkeys.length ? pkeys.length + ' open' : '';
-    let phtml = '';
-    for (const [sym, p] of Object.entries(pos)) {
+    // Open Positions — live from portfolio API
+    fetch('/api/auto/portfolio')
+      .then(r => r.json())
+      .then(port => {
+        const rows = port.positions || [];
+        document.getElementById('pos-count').textContent = rows.length ? rows.length + ' open' : '';
+        let phtml = '';
+        const usdSyms = ['AAPL','NFLX','MSFT','GOOGL','AMZN','META','NVDA','TSLA','JPM','BAC','GS','V','MA','JNJ','PFE','UNH','WMT','KO','MCD','XOM','CVX'];
+        for (const p of rows) {
+          const sym = p.symbol;
+          const isUSD = usdSyms.includes(sym) || sym.includes('-USD');
+          const fmtP = (v, usd) => usd ? '$'+Number(v).toLocaleString('en-US',{maximumFractionDigits:2}) : '₹'+Number(v).toLocaleString('en-IN',{maximumFractionDigits:2});
+          const upnlColor = p.pnl >= 0 ? '#16a34a' : '#dc2626';
+          const tslBadge = p.tsl_active
+            ? `<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:20px;font-size:11px;font-     weight:600;">ON</span>`
+            : `<span style="background:#f1f5f9;color:#94a3b8;padding:2px 8px;border-radius:20px;font-size:11px;">OFF</span>`;
+          phtml += `<tr>
+            <td>${sym}</td><td>${p.qty}</td>
+            <td>${fmtP(p.buy_price, isUSD)}</td>
+            <td>${fmtP(p.ltp, isUSD)}</td>
+            <td style="color:${upnlColor};font-weight:600;">${fmtP(p.pnl, false)}</td>
+            <td>${tslBadge}</td></tr>`;
+        }
+        document.getElementById('positions-body').innerHTML =
+          phtml || '<tr><td colspan="5" class="empty-msg">No open positions</td></tr>';
+      }).catch(() => {});
       const ltp    = p.current_price || p.buy_price;
       const upnl   = ((ltp - p.buy_price) * p.qty).toFixed(2);
       const upnlColor = upnl >= 0 ? '#16a34a' : '#dc2626';

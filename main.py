@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import os
 import time
 import threading
@@ -204,9 +204,9 @@ if _db_state:
 # ── Rebuild trades from DB ────────────────────────────────────────────────────
 db_trades = load_trades()
 trader.trades = [t for t in db_trades if t.get("action") == "SELL"]
-print(f"  ✅ Restored {len(trader.trades)} closed trades from DB")
-print(f"  ✅ Capital: ₹{trader.capital:,.2f}")
-print(f"  ✅ Open positions: {list(trader.positions.keys())}")
+print(f"  [OK] Restored {len(trader.trades)} closed trades from DB")
+print(f"  [OK] Capital: Rs.{trader.capital:,.2f}")
+print(f"  [OK] Open positions: {list(trader.positions.keys())}")
 
 
 def patch_old_positions(trader: PaperTrader):
@@ -258,7 +258,7 @@ def is_tradeable(symbol):
             return False
         if wd == 6 and t < 1200:   # Sunday before 8 PM — closed
             return False
-            return True
+        return True
 
     if itype == "FOREX":
         if wd == 5 and t >= 120:
@@ -742,3 +742,4 @@ if __name__ == "__main__":
     threading.Thread(target=start_dashboard, daemon=True).start()
     scan()
     run_scheduler()
+

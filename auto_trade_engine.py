@@ -1,4 +1,4 @@
-# auto_trade_engine.py — RSI Bot v3 Auto Buy/Sell Engine
+﻿# auto_trade_engine.py — RSI Bot v3 Auto Buy/Sell Engine
 # Paper trading simulation with full filter pipeline
 # Filters: Blacklist → Earnings → ATR → Nifty50 → News → RSI+MACD entry
 # Exit: Fixed SL 5% | TSL activates at +10%, trails 5%
@@ -64,16 +64,23 @@ IST = pytz.timezone("Asia/Kolkata")
 # ─────────────────────────────────────────────────────────────────────────────
 # FILE HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
-def _load_json(path: str, default) -> dict:
-    os.makedirs("logs", exist_ok=True)
-    if not os.path.exists(path):
-        _save_json(path, default)
-        return default
-    try:
-        with open(path, "r") as f:
-            return json.load(f)
-    except Exception:
-        return default
+def load_open_positions() -> dict:
+    from db_state import load_state as _db_load
+    db = _db_load()
+    if db and db.get("positions"):
+        positions = db["positions"]
+        # Normalize keys from main.py format to engine format
+        for sym, p in positions.items():
+            if "stop_loss" in p and "sl_price" not in p:
+                p["sl_price"] = p["stop_loss"]
+            if "highest_price" in p and "peak_price" not in p:
+                p["peak_price"] = p["highest_price"]
+            if "allocation" not in p:
+                p["allocation"] = round(p["buy_price"] * p["qty"], 2)
+            if "buy_time" in p and "entry_time" not in p:
+                p["entry_time"] = p["buy_time"]
+        return positions
+    return _load_json(OPEN_POSITIONS_FILE, {})
 
 
 def _save_json(path: str, data):
@@ -82,8 +89,7 @@ def _save_json(path: str, data):
         json.dump(data, f, indent=2, default=str)
 
 
-def load_open_positions() -> dict:
-    return _load_json(OPEN_POSITIONS_FILE, {})
+
 
 
 def save_open_positions(positions: dict):
@@ -651,7 +657,7 @@ def get_portfolio_summary() -> dict:
 
         pnl     = round((price - pos["buy_price"]) * pos["qty"], 2)
         pnl_pct = round((price - pos["buy_price"]) / pos["buy_price"] * 100, 2)
-        total_invested += pos["allocation"]
+        total_invested += pos.get("allocation", pos["buy_price"] * pos["qty"])
         total_pnl      += pnl
 
         rows.append({
@@ -661,11 +667,10 @@ def get_portfolio_summary() -> dict:
             "ltp"       : round(price, 2),
             "pnl"       : pnl,
             "pnl_pct"   : pnl_pct,
-            "sl_price"  : pos["sl_price"],
-            "tsl_active": pos["tsl_active"],
-            "tsl_price" : pos.get("tsl_price"),
-            "peak_price": pos.get("peak_price"),
-            "entry_time": pos["entry_time"],
+            "sl_price"  : pos.get("stop_loss", pos.get("sl_price", 0)),
+            "target"    : pos.get("target", pos.get("tp_price", 0)),
+            "tsl_active": pos.get("tsl_active", False),
+            "itype"     : pos.get("itype", "?"),
         })
 
     return {
