@@ -1,12 +1,12 @@
 {
-  "capital": 91917.4,
+  "capital": 87948.99999999999,
   "positions": {
     "AAPL": {
       "qty": 10,
       "buy_price": 280.15,
       "buy_time": "18:30",
       "itype": "US_STOCK",
-      "stop_loss": 273.14625,
+      "stop_loss": 273.1462,
       "target": 288.5545,
       "highest_price": 280.15,
       "tsl_active": false
@@ -18,17 +18,37 @@
       "itype": "US_STOCK",
       "stop_loss": 89.7975,
       "target": 94.863,
-      "highest_price": 92.1,
+      "highest_price": 92.265,
       "tsl_active": false
     },
     "TCS.NS": {
       "qty": 1,
       "buy_price": 2426.0,
-      "buy_time": "13:34",
+      "buy_time": "08:04",
       "itype": "STOCK",
       "stop_loss": 2377.48,
       "target": 2498.78,
-      "highest_price": 2426.0,
+      "highest_price": 2452.8999,
+      "tsl_active": false
+    },
+    "BHARTIARTL.NS": {
+      "qty": 1,
+      "buy_price": 1829.6,
+      "buy_time": "08:33",
+      "itype": "STOCK",
+      "stop_loss": 1793.008,
+      "target": 1884.488,
+      "highest_price": 1841.2,
+      "tsl_active": false
+    },
+    "SBIN.NS": {
+      "qty": 2,
+      "buy_price": 1069.4,
+      "buy_time": "09:09",
+      "itype": "STOCK",
+      "stop_loss": 1048.012,
+      "target": 1101.482,
+      "highest_price": 1070.3,
       "tsl_active": false
     }
   },
@@ -88,6 +108,48 @@
       "pnl": "",
       "reason": "RSI BUY",
       "itype": "STOCK"
+    },
+    {
+      "date": "04-May-2026",
+      "time": "14:03",
+      "symbol": "BHARTIARTL.NS",
+      "action": "BUY",
+      "price": 1829.6,
+      "buy_price": 1829.6,
+      "sell_price": "",
+      "qty": 1,
+      "rsi": 29.6,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "04-May-2026",
+      "time": "14:39",
+      "symbol": "SBIN.NS",
+      "action": "BUY",
+      "price": 1069.4,
+      "buy_price": 1069.4,
+      "sell_price": "",
+      "qty": 2,
+      "rsi": 39.5,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "05-May-2026",
+      "time": "12:09",
+      "symbol": "ICICIBANK.NS",
+      "action": "BUY",
+      "price": 1248.9,
+      "buy_price": 1248.9,
+      "sell_price": "",
+      "qty": 4,
+      "rsi": 40.7,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 0,
@@ -95,5 +157,5 @@
   "losses": 0,
   "win_rate": 0,
   "realised_pnl": 0,
-  "return_pct": -8.08
+  "return_pct": -18.36
 }

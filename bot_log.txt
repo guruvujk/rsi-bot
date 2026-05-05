@@ -1,0 +1,10 @@
+[DB] DATABASE_URL set: True
+[Dashboard] Loaded from DB: capital=87948.99999999999, positions=5, trades=6
+Traceback (most recent call last):
+  File "C:\Users\JKRAOWIN\rsi_bot_v2\rsi_bot_v2\main.py", line 207, in <module>
+    print(f"  \u2705 Restored {len(trader.trades)} closed trades from DB")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 2: character maps to <undefined>

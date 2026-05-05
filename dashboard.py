@@ -69,7 +69,7 @@ DASHBOARD_HTML = """
 <html>
 <head>
   <title>RSI Bot — Paper Trade Dashboard</title>
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #1a1a2e; }
@@ -144,11 +144,11 @@ DASHBOARD_HTML = """
 <div class="stats">
   <div class="stat">
     <div class="label">Available Capital</div>
-    <div class="value blue" id="capital">₹1,00,000</div>
+    <div class="value blue" id="capital">...</div>
   </div>
   <div class="stat">
     <div class="label">Portfolio Value</div>
-    <div class="value" id="portfolio_val">₹1,00,000</div>
+    <div class="value" id="portfolio_val">...</div>
   </div>
   <div class="stat">
     <div class="label">Realised P&L</div>
@@ -226,8 +226,16 @@ DASHBOARD_HTML = """
 </div>
 
 <script>
-  const socket = io();
-  setInterval(() => {
+  var socket = io();
+  // Poll capital from DB every 5 seconds
+  function refreshCapital() {
+    fetch('/api/state').then(r=>r.json()).then(d=>{
+      var cap = Number(d.capital||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+      document.getElementById('capital').textContent = String.fromCharCode(8377)+cap;
+      document.getElementById('portfolio_val').textContent = String.fromCharCode(8377)+cap;
+    }).catch(()=>{});
+  }
+    setInterval(() => {
     document.getElementById('clock').textContent =
       new Date().toLocaleTimeString('en-IN');
   }, 1000);
@@ -235,12 +243,14 @@ DASHBOARD_HTML = """
   function fmt(n) {
     return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
   }
+  setTimeout(refreshCapital, 1000);
   function colorVal(el, val) {
     el.className = 'value ' + (val > 0 ? 'green' : val < 0 ? 'red' : 'gray');
   }
 
   socket.on('state_update', (d) => {
     document.getElementById('capital').textContent       = fmt(d.capital || 0);
+    document.getElementById('portfolio_val').textContent  = fmt(d.capital || 0);
     document.getElementById('portfolio_val').textContent = fmt(d.portfolio_val || d.capital || 0);
 
     const pnlEl = document.getElementById('pnl');
@@ -271,7 +281,7 @@ DASHBOARD_HTML = """
       const bClass   = v.signal === 'BUY'  ? 'badge-buy'
                      : v.signal === 'SELL' ? 'badge-sell' : 'badge-hold';
       const isUsd = sym.includes('-USD') || sym.includes('/USD') || sym.includes('=F') || 
-      ['AAPL','MSFT','GOOGL','AMZN','META','NVDA','TSLA','NFLX','JPM','BAC','GS','V','MA','JNJ','PFE','UNH','WMT','KO','MCD','X   OM','CVX','SPY','QQQ','GLD'].includes(sym);
+      ['AAPL','MSFT','GOOGL','AMZN','META','NVDA','TSLA','NFLX','JPM','BAC','GS','V','MA','JNJ','PFE','UNH','WMT','KO','MCD','XOM','CVX','SPY','QQQ','GLD'].includes(sym);
       const priceStr = v.price
       ? (isUsd ? '$' + Number(v.price).toLocaleString('en-US', {maximumFractionDigits:2})
            : fmt(v.price))
@@ -317,25 +327,8 @@ DASHBOARD_HTML = """
         document.getElementById('positions-body').innerHTML =
           phtml || '<tr><td colspan="5" class="empty-msg">No open positions</td></tr>';
       }).catch(() => {});
-      const ltp    = p.current_price || p.buy_price;
-      const upnl   = ((ltp - p.buy_price) * p.qty).toFixed(2);
-      const upnlColor = upnl >= 0 ? '#16a34a' : '#dc2626';
-      const tslBadge = p.tsl_active
-        ? `<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">🔒 ON</span>`
-        : `<span style="background:#f1f5f9;color:#94a3b8;padding:2px 8px;border-radius:20px;font-size:11px;">OFF</span>`;
-      phtml += `<tr>
-        <td style="font-weight:500;">${sym.replace('.NS','')}</td>
-        <td>${p.qty}</td>
-        <td>${sym.includes('-USD') || sym.includes('=F') || ['AAPL','MSFT','GOOGL','AMZN','META','NVDA','TSLA','NFLX','JPM','BAC','GS','V','MA','JNJ','PFE','UNH','WMT','KO','MCD','XOM','CVX','SPY','QQQ','GLD'].includes(sym) ? '$'+Number(p.buy_price).toLocaleString('en-US',{maximumFractionDigits:2}) : fmt(p.buy_price)}</td>
-        <td>${sym.includes('-USD') || sym.includes('=F') ? '$'+Number(ltp).toLocaleString('en-US',{maximumFractionDigits:2}) : fmt(ltp)}</td>
-        <td style="color:${upnlColor};font-weight:600;">₹${Number(upnl).toLocaleString('en-IN')}</td>
-        <td>${tslBadge}</td>
-      </tr>`;
-    }
-    document.getElementById('positions-body').innerHTML =
-      phtml || '<tr><td colspan="5" class="empty-msg">No open positions</td></tr>';
-
-    // Trade Log
+      
+      // Trade Log
     const trades = [...(d.trades || [])].reverse().slice(0, 20);
     let thtml = '';
     trades.forEach(t => {
@@ -532,6 +525,11 @@ def push_updates():
             bot_state["win_rate"]     = round(len(wins)/len(closed)*100,1) if closed else 0
         except Exception as e:
             print(f"[push] {e}")
+        from db_state import load_state as _fresh
+        _fs = _fresh()
+        if _fs:
+            bot_state['capital'] = _fs.get('capital', bot_state['capital'])
+            bot_state['positions'] = _fs.get('positions', bot_state['positions'])
         socketio.emit('state_update', bot_state)
         time.sleep(5)
 
@@ -545,3 +543,9 @@ def start_dashboard():
     logging.getLogger('engineio').setLevel(logging.ERROR)   # ← ADD
     threading.Thread(target=push_updates, daemon=True).start()
     socketio.run(app, host='0.0.0.0', port=5000, log_output=False, debug=False, allow_unsafe_werkzeug=True)
+@app.route('/api/state')
+def api_state():
+    from db_state import load_state as _db
+    s = _db() or {}
+    return jsonify({'capital': s.get('capital', 100000), 'positions': len(s.get('positions', {}))})
+

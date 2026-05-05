@@ -514,14 +514,24 @@ class PaperTrader:
     def update_open_pnl(self, prices: dict) -> float:
         total = 0.0
         rate  = get_usd_inr_rate()
+        import yfinance as yf
         for s, p in self.positions.items():
+            if s not in prices:
+                try:
+                    df = yf.download(s, period="1d", interval="5m",
+                                     progress=False, auto_adjust=True)
+                    if not df.empty:
+                        prices[s] = float(df["Close"].squeeze().iloc[-1])
+                except Exception:
+                    pass
             if s not in prices:
                 continue
             current = prices[s]
             bought  = p["buy_price"]
             qty     = p["qty"]
-            if "-USD" in s:
+            if "-USD" in s or p.get("itype") == "US_STOCK":
                 current_inr = current * rate
+                bought = p["buy_price"] * rate  # buy_price stored in USD for US stocks
                 pnl = (current_inr - bought) * qty
             else:
                 pnl = (current - bought) * qty
@@ -546,8 +556,8 @@ class PaperTrader:
                 continue
 
             ltp = prices[symbol]
-            ltp_inr = ltp * rate if "-USD" in symbol else ltp
-            buy_inr = pos["buy_price"]
+            ltp_inr = ltp * rate if ("-USD" in symbol or pos.get("itype") == "US_STOCK") else ltp
+            buy_inr = pos["buy_price"] * rate if pos.get("itype") == "US_STOCK" else pos["buy_price"]
             stop_loss = buy_inr * (1 - STOP_LOSS_PCT)
 
             if ltp_inr <= stop_loss:
@@ -596,3 +606,7 @@ class PaperTrader:
             if not exists:
                 w.writeheader()
             w.writerow(row)
+
+
+
+

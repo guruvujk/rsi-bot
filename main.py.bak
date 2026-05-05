@@ -555,33 +555,6 @@ def scan_symbol(symbol, current_prices):
 # ─────────────────────────────────────────────────────────────────────────────
 # Full market scan
 # ─────────────────────────────────────────────────────────────────────────────
-#check_trail_alerts()
-#REAL_PORTFOLIO
-# ── TRAIL ALERT FOR REAL HOLDINGS ────────────────────────────────
-REAL_PORTFOLIO = {
-    "HDFCBANK.NS": {"avg": 783.75, "qty": 13, "gtt": 768},
-    "SUNPHARMA.NS": {"avg": 1750.65, "qty": 12, "gtt": 1784},
-    "CIPLA.NS": {"avg": 1321.10, "qty": 8, "gtt": 1300},
-}
-
-def check_trail_alerts(current_prices):
-    for symbol, info in REAL_PORTFOLIO.items():
-        price = current_prices.get(symbol)
-        if not price:
-            continue
-        new_sl = round(price * 0.98, 2)
-        change_pct = ((price - info["avg"]) / info["avg"]) * 100
-        if new_sl > info["gtt"] + 5:
-            send_telegram(
-                f"📈 *TRAIL ALERT*\n{'─'*22}\n"
-                f"*{symbol.replace('.NS','')}*\n"
-                f"Price  : ₹{price:,.2f}\n"
-                f"Change : +{change_pct:.1f}%\n"
-                f"Current GTT: ₹{info['gtt']}\n"
-                f"➡️ Update GTT to: *₹{new_sl:,.2f}*",
-                "INFO"
-            )
-            print(f"  📈 TRAIL ALERT: {symbol} → Update GTT to ₹{new_sl}")
 def scan():
     now    = datetime.now(IST)
     active = [s for s in WATCHLIST if is_tradeable(s)]
@@ -606,7 +579,6 @@ def scan():
         scan_symbol(symbol, current_prices)
 
     pt.update_open_pnl(current_prices)
-    check_trail_alerts(current_prices)
 
     # Recalculate stop_loss using adaptive SL (not fixed pct)
     for symbol, pos in pt.positions.items():
@@ -759,12 +731,6 @@ if __name__ == "__main__":
     print(f"\n  Total : {len(WATCHLIST)} instruments"
           f" | Max pos: {MAX_POSITIONS}")
     print("=" * 62)
-    from auto_trade_routes import auto_trade_bp
-    from auto_trade_engine import start_scheduler as start_auto_scheduler
-    from dashboard import app as flask_app
-    flask_app.register_blueprint(auto_trade_bp)
-    start_auto_scheduler()
-    print('  [AutoTrade] Engine started')
 
     threading.Thread(target=start_dashboard, daemon=True).start()
     scan()
