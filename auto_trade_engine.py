@@ -4,6 +4,7 @@
 # Exit: Fixed SL 5% | TSL activates at +10%, trails 5%
 
 import json
+from paper_trade import get_usd_inr_rate
 import os
 import time
 import threading
@@ -657,7 +658,7 @@ def get_portfolio_summary() -> dict:
         pnl     = round((price - pos["buy_price"]) * pos["qty"], 2)
         pnl_pct = round((price - pos["buy_price"]) / pos["buy_price"] * 100, 2)
         total_invested += pos.get("allocation", pos["buy_price"] * pos["qty"])
-        USD_TO_INR = 84.0
+        USD_TO_INR = get_usd_inr_rate()
         pnl_inr = round(pnl * USD_TO_INR, 2) if pos.get("itype") == "US_STOCK" else pnl
         total_pnl += pnl_inr
         rows.append({
