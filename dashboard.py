@@ -232,7 +232,6 @@ DASHBOARD_HTML = """
     fetch('/api/state').then(r=>r.json()).then(d=>{
       var cap = Number(d.capital||0).toLocaleString('en-IN',{maximumFractionDigits:2});
       document.getElementById('capital').textContent = String.fromCharCode(8377)+cap;
-      document.getElementById('portfolio_val').textContent = String.fromCharCode(8377)+cap;
     }).catch(()=>{});
   }
     setInterval(() => {
@@ -250,7 +249,6 @@ DASHBOARD_HTML = """
 
   socket.on('state_update', (d) => {
     document.getElementById('capital').textContent       = fmt(d.capital || 0);
-    document.getElementById('portfolio_val').textContent  = fmt(d.capital || 0);
     document.getElementById('portfolio_val').textContent = fmt(d.portfolio_val || d.capital || 0);
 
     const pnlEl = document.getElementById('pnl');
@@ -321,7 +319,7 @@ DASHBOARD_HTML = """
             <td>${sym}</td><td>${p.qty}</td>
             <td>${fmtP(p.buy_price, isUSD)}</td>
             <td>${fmtP(p.ltp, isUSD)}</td>
-            <td style="color:${upnlColor};font-weight:600;">${fmtP(p.pnl, false)}</td>
+            <td style="color:${upnlColor};font-weight:600;">₹${Number(p.itype === 'US_STOCK' ? p.pnl * 84 : p.pnl).toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
             <td>${tslBadge}</td></tr>`;
         }
         document.getElementById('positions-body').innerHTML =
