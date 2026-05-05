@@ -1,4 +1,4 @@
-﻿# auto_trade_engine.py — RSI Bot v3 Auto Buy/Sell Engine
+# auto_trade_engine.py — RSI Bot v3 Auto Buy/Sell Engine
 # Paper trading simulation with full filter pipeline
 # Filters: Blacklist → Earnings → ATR → Nifty50 → News → RSI+MACD entry
 # Exit: Fixed SL 5% | TSL activates at +10%, trails 5%
@@ -646,7 +646,6 @@ def get_portfolio_summary() -> dict:
     rows      = []
     total_invested = 0
     total_pnl      = 0
-
     for symbol, pos in positions.items():
         try:
             df    = yf.download(symbol, period="1d", interval="1m",
@@ -658,8 +657,9 @@ def get_portfolio_summary() -> dict:
         pnl     = round((price - pos["buy_price"]) * pos["qty"], 2)
         pnl_pct = round((price - pos["buy_price"]) / pos["buy_price"] * 100, 2)
         total_invested += pos.get("allocation", pos["buy_price"] * pos["qty"])
-        total_pnl      += pnl
-
+        USD_TO_INR = 84.0
+        pnl_inr = round(pnl * USD_TO_INR, 2) if pos.get("itype") == "US_STOCK" else pnl
+        total_pnl += pnl_inr
         rows.append({
             "symbol"    : symbol,
             "qty"       : pos["qty"],
@@ -681,3 +681,4 @@ def get_portfolio_summary() -> dict:
         "open_count"     : len(rows),
         "max_positions"  : MAX_OPEN_POSITIONS,
     }
+

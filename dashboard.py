@@ -389,9 +389,10 @@ def portfolio():
         "capital": capital,
         "portfolio_value": portfolio_val,
         "unrealised_pnl": sum(
-    (p.get("current_price", p.get("buy_price", 0)) - p.get("buy_price", 0)) * p.get("qty", 0)
-    for p in raw_positions.values()
-) if isinstance(raw_positions, dict) else 0,
+        ((p.get("current_price", p.get("buy_price", 0)) - p.get("buy_price", 0)) * p.get("qty", 0))
+        * (84.0 if p.get("itype") == "US_STOCK" else 1.0)
+        for p in raw_positions.values()
+    ) if isinstance(raw_positions, dict) else 0,
         "realised_pnl": bot_state.get("realised_pnl", 0),
         "total_return_pct": bot_state.get("return_pct", 0),
         "win_rate": bot_state.get("win_rate", 0),
