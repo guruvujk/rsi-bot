@@ -564,25 +564,42 @@ REAL_PORTFOLIO = {
     "CIPLA.NS": {"avg": 1321.10, "qty": 8, "gtt": 1300},
 }
 
+GTT_FILE = "logs/gtt_state.json"
+
+def _load_gtt():
+    try:
+        with open(GTT_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {k: v["gtt"] for k, v in REAL_PORTFOLIO.items()}
+
+def _save_gtt(gtt: dict):
+    os.makedirs("logs", exist_ok=True)
+    with open(GTT_FILE, "w") as f:
+        json.dump(gtt, f)
+
 def check_trail_alerts(current_prices):
+    gtt = _load_gtt()
     for symbol, info in REAL_PORTFOLIO.items():
         price = current_prices.get(symbol)
         if not price:
             continue
         new_sl = round(price * 0.98, 2)
         change_pct = ((price - info["avg"]) / info["avg"]) * 100
-        if new_sl > info["gtt"] + 10:
-              send_telegram(
-                  f"📈 *TRAIL ALERT*\n{'─'*22}\n"
-                  f"*{symbol.replace('.NS','')}*\n"
-                  f"Price  : ₹{price:,.2f}\n"
-                  f"Change : +{change_pct:.1f}%\n"
-                  f"Current GTT: ₹{info['gtt']}\n"
-                  f"➡️ Update GTT to: *₹{new_sl:,.2f}*",
-                  "INFO"
-              )
-              print(f"  📈 TRAIL ALERT: {symbol} → Update GTT to ₹{new_sl}")
-              info["gtt"] = new_sl  # ← update in memory to prevent spam
+        current_gtt = gtt.get(symbol, info["gtt"])
+        if new_sl > current_gtt + 10:
+            send_telegram(
+                f"📈 *TRAIL ALERT*\n{'─'*22}\n"
+                f"*{symbol.replace('.NS','')}*\n"
+                f"Price  : ₹{price:,.2f}\n"
+                f"Change : +{change_pct:.1f}%\n"
+                f"Current GTT: ₹{current_gtt}\n"
+                f"➡️ Update GTT to: *₹{new_sl:,.2f}*",
+                "INFO"
+            )
+            print(f"  📈 TRAIL ALERT: {symbol} → Update GTT to ₹{new_sl}")
+            gtt[symbol] = new_sl
+            _save_gtt(gtt)
 def scan():
     now    = datetime.now(IST)
     active = [s for s in WATCHLIST if is_tradeable(s)]
