@@ -298,6 +298,9 @@ def get_entry_signal(df: pd.DataFrame) -> tuple[bool, dict]:
 def paper_buy(symbol: str, price: float, allocation: float,
               signal: dict, filter_log: list) -> dict:
     """Simulate a BUY order."""
+    positions = load_open_positions()
+    if symbol in positions:
+        return {"success": False, "reason": f"Already holding {symbol} — duplicate blocked"}
     brokerage = round(allocation * BROKERAGE_PCT, 2)
     qty       = int((allocation - brokerage) / price)
     if qty < 1:
