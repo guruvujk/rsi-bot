@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import os
 import time
 import threading
@@ -571,17 +571,18 @@ def check_trail_alerts(current_prices):
             continue
         new_sl = round(price * 0.98, 2)
         change_pct = ((price - info["avg"]) / info["avg"]) * 100
-        if new_sl > info["gtt"] + 5:
-            send_telegram(
-                f"📈 *TRAIL ALERT*\n{'─'*22}\n"
-                f"*{symbol.replace('.NS','')}*\n"
-                f"Price  : ₹{price:,.2f}\n"
-                f"Change : +{change_pct:.1f}%\n"
-                f"Current GTT: ₹{info['gtt']}\n"
-                f"➡️ Update GTT to: *₹{new_sl:,.2f}*",
-                "INFO"
-            )
-            print(f"  📈 TRAIL ALERT: {symbol} → Update GTT to ₹{new_sl}")
+        if new_sl > info["gtt"] + 10:
+              send_telegram(
+                  f"📈 *TRAIL ALERT*\n{'─'*22}\n"
+                  f"*{symbol.replace('.NS','')}*\n"
+                  f"Price  : ₹{price:,.2f}\n"
+                  f"Change : +{change_pct:.1f}%\n"
+                  f"Current GTT: ₹{info['gtt']}\n"
+                  f"➡️ Update GTT to: *₹{new_sl:,.2f}*",
+                  "INFO"
+              )
+              print(f"  📈 TRAIL ALERT: {symbol} → Update GTT to ₹{new_sl}")
+              info["gtt"] = new_sl  # ← update in memory to prevent spam
 def scan():
     now    = datetime.now(IST)
     active = [s for s in WATCHLIST if is_tradeable(s)]
