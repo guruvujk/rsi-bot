@@ -4,6 +4,9 @@ import threading, time
 
 app      = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
+from auto_trade_routes import auto_trade_bp
+app.register_blueprint(auto_trade_bp)
+
 
 # ── Shared live state (written by main.py, read by dashboard) ────────────────
 # Load from PostgreSQL on startup
@@ -357,6 +360,17 @@ DASHBOARD_HTML = """
 
 
 
+
+@app.route("/api/positions")
+def api_positions():
+    from dashboard import bot_state as s
+    raw = s.get("positions", {})
+    pos_list = []
+    if isinstance(raw, dict):
+        for sym, p in raw.items():
+            pos_list.append({"symbol": sym, "qty": p.get("qty",0), "buy_price": p.get("buy_price",0), "ltp": p.get("current_price", p.get("buy_price",0)), "pnl": p.get("pnl",0), "stop_loss": p.get("stop_loss",0)})
+    from flask import jsonify
+    return jsonify({"positions": pos_list, "count": len(pos_list)})
 @app.route("/portfolio")
 def portfolio():
     raw_positions = bot_state.get("positions", {})

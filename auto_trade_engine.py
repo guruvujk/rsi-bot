@@ -5,6 +5,7 @@
 
 import json
 from paper_trade import get_usd_inr_rate
+from paper_trade import get_usd_inr_rate
 import os
 import time
 import threading

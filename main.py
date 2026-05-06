@@ -759,10 +759,9 @@ if __name__ == "__main__":
     print(f"\n  Total : {len(WATCHLIST)} instruments"
           f" | Max pos: {MAX_POSITIONS}")
     print("=" * 62)
-    from auto_trade_routes import auto_trade_bp
+   
     from auto_trade_engine import start_scheduler as start_auto_scheduler
     from dashboard import app as flask_app
-    flask_app.register_blueprint(auto_trade_bp)
     start_auto_scheduler()
     print('  [AutoTrade] Engine started')
 

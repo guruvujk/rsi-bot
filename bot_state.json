@@ -1,5 +1,5 @@
 {
-  "capital": 87948.99999999999,
+  "capital": 348984.58430000005,
   "positions": {
     "AAPL": {
       "qty": 10,
@@ -8,17 +8,7 @@
       "itype": "US_STOCK",
       "stop_loss": 273.1462,
       "target": 288.5545,
-      "highest_price": 280.15,
-      "tsl_active": false
-    },
-    "NFLX": {
-      "qty": 31,
-      "buy_price": 92.1,
-      "buy_time": "18:30",
-      "itype": "US_STOCK",
-      "stop_loss": 89.7975,
-      "target": 94.863,
-      "highest_price": 92.265,
+      "highest_price": 284.335,
       "tsl_active": false
     },
     "TCS.NS": {
@@ -50,6 +40,16 @@
       "target": 1101.482,
       "highest_price": 1070.3,
       "tsl_active": false
+    },
+    "PFE": {
+      "qty": 190,
+      "buy_price": 26.215,
+      "buy_time": "13:44",
+      "itype": "US_STOCK",
+      "stop_loss": 25.5596,
+      "target": 27.00145,
+      "highest_price": 26.645,
+      "tsl_active": true
     }
   },
   "trades": [
@@ -150,6 +150,20 @@
       "pnl": "",
       "reason": "RSI BUY",
       "itype": "STOCK"
+    },
+    {
+      "date": "05-May-2026",
+      "time": "19:14",
+      "symbol": "PFE",
+      "action": "BUY",
+      "price": 26.21,
+      "buy_price": 26.21,
+      "sell_price": "",
+      "qty": 190,
+      "rsi": 39.8,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 0,
@@ -157,5 +171,5 @@
   "losses": 0,
   "win_rate": 0,
   "realised_pnl": 0,
-  "return_pct": -18.36
+  "return_pct": 256.86
 }
