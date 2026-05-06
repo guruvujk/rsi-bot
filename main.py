@@ -294,7 +294,7 @@ def format_price(symbol, price):
 # ─────────────────────────────────────────────────────────────────────────────
 # Dashboard sync
 # ─────────────────────────────────────────────────────────────────────────────
-def sync_dashboard():
+def sync_dashboard(current_prices={}):
     global state
     if state is None:
         from dashboard import bot_state as _s
@@ -321,7 +321,7 @@ def sync_dashboard():
 
     state['positions'] = {}
     for s, p in pt.positions.items():
-        raw_price  = state.get('watchlist', {}).get(s, {}).get('price')
+        raw_price = current_prices.get(s) or state.get('watchlist', {}).get(s, {}).get('price')
         if raw_price is None:
             raw_price = p['buy_price']
         itype      = get_instrument_type(s)
@@ -625,7 +625,7 @@ def scan():
             voice="Raj"
         )
 
-    sync_dashboard()
+    sync_dashboard(current_prices)
     save_state(pt)
 
     s = pt.stats()
