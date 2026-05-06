@@ -1,5 +1,5 @@
 {
-  "capital": 348984.58430000005,
+  "capital": 344025.38430000003,
   "positions": {
     "AAPL": {
       "qty": 10,
@@ -9,7 +9,11 @@
       "stop_loss": 273.1462,
       "target": 288.5545,
       "highest_price": 284.335,
-      "tsl_active": false
+      "tsl_active": false,
+      "sl_price": 273.1462,
+      "peak_price": 284.335,
+      "allocation": 2801.5,
+      "entry_time": "18:30"
     },
     "TCS.NS": {
       "qty": 1,
@@ -19,7 +23,11 @@
       "stop_loss": 2377.48,
       "target": 2498.78,
       "highest_price": 2466.8,
-      "tsl_active": true
+      "tsl_active": true,
+      "sl_price": 2377.48,
+      "peak_price": 2466.8,
+      "allocation": 2426.0,
+      "entry_time": "08:04"
     },
     "BHARTIARTL.NS": {
       "qty": 1,
@@ -29,7 +37,11 @@
       "stop_loss": 1793.008,
       "target": 1884.488,
       "highest_price": 1841.2,
-      "tsl_active": false
+      "tsl_active": false,
+      "sl_price": 1793.008,
+      "peak_price": 1841.2,
+      "allocation": 1829.6,
+      "entry_time": "08:33"
     },
     "SBIN.NS": {
       "qty": 2,
@@ -39,17 +51,22 @@
       "stop_loss": 1048.012,
       "target": 1101.482,
       "highest_price": 1077.7,
-      "tsl_active": false
+      "tsl_active": false,
+      "sl_price": 1048.012,
+      "peak_price": 1077.7,
+      "allocation": 2138.8,
+      "entry_time": "09:09",
+      "tsl_price": null
     },
-    "PFE": {
-      "qty": 190,
-      "buy_price": 26.215,
-      "buy_time": "13:44",
-      "itype": "US_STOCK",
-      "stop_loss": 25.5596,
-      "target": 27.00145,
-      "highest_price": 26.645,
-      "tsl_active": true
+    "ITC.NS": {
+      "qty": 16,
+      "buy_price": 309.95,
+      "buy_time": "12:53",
+      "itype": "STOCK",
+      "stop_loss": 303.751,
+      "target": 319.2485,
+      "highest_price": 310.4,
+      "tsl_active": false
     }
   },
   "trades": [
@@ -164,6 +181,20 @@
       "pnl": "",
       "reason": "RSI BUY",
       "itype": "STOCK"
+    },
+    {
+      "date": "06-May-2026",
+      "time": "12:53",
+      "symbol": "ITC.NS",
+      "action": "BUY",
+      "price": 309.95,
+      "buy_price": 309.95,
+      "sell_price": "",
+      "qty": 16,
+      "rsi": 41.4,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 0,
@@ -171,5 +202,5 @@
   "losses": 0,
   "win_rate": 0,
   "realised_pnl": 0,
-  "return_pct": 256.89
+  "return_pct": 247.86
 }

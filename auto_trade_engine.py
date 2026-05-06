@@ -97,9 +97,6 @@ def _save_json(path: str, data):
         json.dump(data, f, indent=2, default=str)
 
 
-
-
-
 def save_open_positions(positions: dict):
     _save_json(OPEN_POSITIONS_FILE, positions)
     try:
@@ -343,6 +340,25 @@ def paper_buy(symbol: str, price: float, allocation: float,
 
     print(f"  🟢 PAPER BUY  {symbol:20s} ₹{price:>8.2f} × {qty} qty"
           f"  SL ₹{sl_price:.2f}  [{datetime.now(IST).strftime('%H:%M:%S')}]")
+
+    # ── Telegram BUY alert ────────────────────────────────────────────────────
+    try:
+        from telegram_alerts import alert_buy as _alert_buy
+        sl_str     = f"₹{sl_price:.2f} ({FIXED_SL_PCT*100:.1f}%)"
+        target_str = f"₹{round(price * (1 + TSL_ACTIVATE_PCT), 2):.2f} ({TSL_ACTIVATE_PCT*100:.1f}%)"
+        _alert_buy(
+            symbol,
+            f"₹{price:.2f}",
+            qty,
+            signal.get("rsi", 0),
+            sl_str,
+            target_str,
+            0,          # capital_left — placeholder; enrich later if needed
+            "STOCK",
+        )
+    except Exception as e:
+        print(f"  [Telegram] alert_buy failed: {e}")
+
     return {"success": True, "position": position}
 
 
@@ -383,6 +399,23 @@ def paper_sell(symbol: str, exit_price: float, reason: str) -> dict:
     emoji = "💚" if result == "WIN" else "🔴"
     print(f"  {emoji} PAPER SELL {symbol:20s} ₹{exit_price:>8.2f}  "
           f"P&L ₹{pnl:>8.2f} ({pnl_pct:+.1f}%)  [{reason}]")
+
+    # ── Telegram SELL alert ───────────────────────────────────────────────────
+    try:
+        from telegram_alerts import alert_sell as _alert_sell
+        _alert_sell(
+            symbol,
+            f"₹{exit_price:.2f}",
+            qty,
+            reason,
+            pnl,
+            0,          # capital_left — placeholder
+            0,          # open_positions count — placeholder
+            "STOCK",
+        )
+    except Exception as e:
+        print(f"  [Telegram] alert_sell failed: {e}")
+
     return {"success": True, "trade": trade_log}
 
 
@@ -702,9 +735,3 @@ def get_portfolio_summary() -> dict:
         "open_count"     : len(rows),
         "max_positions"  : MAX_OPEN_POSITIONS,
     }
-
-
-
-
-
-
