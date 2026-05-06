@@ -5,11 +5,12 @@
 #   1. STOP_LOSS_PCT reduced 0.04→0.02 (adaptive SL used in main.py)
 #   2. TARGET_PCT reduced 0.04→0.03 (adaptive TP used in main.py)
 #   3. MAX_POSITIONS reduced 8→5 (less exposure, safer)
-#   4. MAX_CAPITAL_PER_TRADE kept at ₹5000 (strictly enforced now)
+#   4. MAX_CAPITAL_PER_TRADE raised ₹5000→₹15000 (2026-05-06)
 DRAWDOWN_PCT = 0.10  # 10% floor = ₹90,000  # 5% — pause BUY if capital drops below this    
 #   5. RISK_PER_TRADE reduced 0.05→0.03 (3% per trade safer)
-#   6. RSI_BUY tightened 35→30 (stronger oversold signal required)
+#   6. RSI_BUY tightened 42→40 (2026-05-06)
 #   7. RSI_SELL tightened 65→70 (stronger overbought signal required)
+#   8. Removed XRP-USD and LINK-USD from CRYPTO (losing, 2026-05-06)
 
 # ── Telegram ────────────────────────────────────────
 TELEGRAM_TOKEN   = "8535585483:AAHjKrywAN7RdkgtI1v2wxWhLQceSpzclBQ"
@@ -23,7 +24,7 @@ TARGET_PCT            = 0.03       # FIX: 3% base TP (adaptive TP overrides per 
 MIN_PRICE             = 1.0        # Skip instruments below ₹1
 MAX_POSITIONS         = 5          # FIX: 5 max (was 8 — too many open at once)
 MAX_SAME_SECTOR       = 2          # Max 2 per sector
-MAX_CAPITAL_PER_TRADE = 5_000      # Max ₹5,000 per position (strictly enforced)
+MAX_CAPITAL_PER_TRADE = 15_000     # ✅ RAISED: ₹15,000 per position (was ₹5,000)
 
 # ── Currency Settings ────────────────────────────────
 BASE_CURRENCY = "INR"
@@ -46,7 +47,7 @@ LOAD_SAVED_POSITIONS = True    # FIX: enabled — crash recovery works now
 
 # ── RSI Settings ────────────────────────────────────
 RSI_PERIOD = 14
-RSI_BUY    = 42    # FIX: tighter (was 35) — only strong oversold signals
+RSI_BUY    = 40    # ✅ UPDATED: was 42 → 40 (catches more oversold entries)
 RSI_SELL   = 70    # FIX: tighter (was 65) — only strong overbought signals
 
 # ── Scan Intervals (seconds) ─────────────────────────
@@ -146,12 +147,10 @@ SECTOR_MAP = {
     "ETH-USD"      : "CRYPTO_MAJOR",
     "BNB-USD"      : "CRYPTO_MAJOR",
     "SOL-USD"      : "CRYPTO_MAJOR",
-    "XRP-USD"      : "CRYPTO_MAJOR",
     "ADA-USD"      : "CRYPTO_MAJOR",
     "AVAX-USD"     : "CRYPTO_MAJOR",
     "DOGE-USD"     : "CRYPTO_MAJOR",
     "DOT-USD"      : "CRYPTO_MAJOR",
-    "LINK-USD"     : "CRYPTO_DEFI",
     "AAVE-USD"     : "CRYPTO_DEFI",
     "CRV-USD"      : "CRYPTO_DEFI",
     "OP-USD"       : "CRYPTO_L2",
@@ -273,9 +272,10 @@ FOREX = {
 CRYPTO = {
     "enabled": True,
     "symbols": [
+        # ✅ REMOVED: XRP-USD and LINK-USD (consistent losers)
         "BTC-USD","ETH-USD","BNB-USD","SOL-USD",
-        "XRP-USD","ADA-USD","AVAX-USD","DOGE-USD","DOT-USD",
-        "LINK-USD","AAVE-USD","CRV-USD",
+        "ADA-USD","AVAX-USD","DOGE-USD","DOT-USD",
+        "AAVE-USD","CRV-USD",
         "OP-USD",
     ]
 }
@@ -289,7 +289,6 @@ US_STOCKS = {
         "JNJ","PFE","UNH",
         "WMT","KO","MCD",
         "XOM","CVX",
-        
     ]
 }
 
@@ -320,7 +319,5 @@ def get_instrument_type(symbol: str) -> str:
 
 # ════════════════════════════════════════════════════
 # WATCHLIST SUMMARY
-# Total: ~107 instruments (BTC-INR, ETH-INR removed from CRYPTO)
+# Total: ~105 instruments (XRP-USD, LINK-USD removed from CRYPTO)
 # ════════════════════════════════════════════════════
-
-

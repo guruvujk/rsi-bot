@@ -1,12 +1,15 @@
 # backtest.py — RSI Bot Backtesting Engine
 # Tests full strategy: RSI + MACD + Volume filter + TSL
 # Period: 2 years fetch, trade last 1 year | All instruments | Excel report
+#
+# FIXES (2026-05-06):
+#   ✅ max_alloc cap raised ₹5,000 → ₹15,000 (matches MAX_CAPITAL_PER_TRADE)
 
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 from config import (
-    WATCHLIST, RSI_BUY, RSI_SELL, CAPITAL,
+    WATCHLIST, RSI_BUY, RSI_SELL, CAPITAL, MAX_CAPITAL_PER_TRADE,
     get_instrument_type
 )
 from rsi_engine import fetch_ohlcv, compute_rsi, compute_macd, _safe_float
@@ -151,7 +154,8 @@ def backtest_symbol(symbol: str) -> list:
             # Buy the dip: RSI oversold + volume spike + MACD turning up
             # Only skip if price is below EMA-200 (confirmed bear market)
             elif rsi_val < RSI_BUY and vol_ok and macd_hist_rising and trend_ok:
-                max_alloc = min(capital * 0.03, 5000)
+                # ✅ FIX: raised cap from 5000 → MAX_CAPITAL_PER_TRADE (₹15,000)
+                max_alloc = MAX_CAPITAL_PER_TRADE  # flat ₹15,000 per trade, no % cap
                 qty       = int(max_alloc / price)
                 if qty <= 0 or qty * price > capital:
                     continue
@@ -235,6 +239,8 @@ def generate_excel_report(all_trades: list):
         ("Period",             "1 Year (2yr fetch, EMA-200 warmed up)"),
         ("Instruments tested", df_t['symbol'].nunique()),
         ("Strategy",           "RSI + MACD + Volume + EMA-200 + TSL"),
+        ("Capital/Trade",      f"₹{MAX_CAPITAL_PER_TRADE:,}"),
+        ("RSI Buy Threshold",  RSI_BUY),
     ]
 
     ws1.row_dimensions[2].height = 10
@@ -392,6 +398,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("  RSI BOT — BACKTESTING ENGINE")
     print(f"  Fetch: 2yr | Trade window: last 1yr | EMA-200 warmed up")
+    print(f"  RSI Buy: {RSI_BUY} | Capital/Trade: ₹{MAX_CAPITAL_PER_TRADE:,}")
     print(f"  Instruments: {len(WATCHLIST)}")
     print("=" * 60)
 
