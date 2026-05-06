@@ -4,8 +4,7 @@
 # Exit: Fixed SL 5% | TSL activates at +10%, trails 5%
 
 import json
-from paper_trade import get_usd_inr_rate
-from paper_trade import get_usd_inr_rate
+from config import get_usd_inr_rate
 import os
 import time
 import threading
@@ -66,6 +65,13 @@ IST = pytz.timezone("Asia/Kolkata")
 # ─────────────────────────────────────────────────────────────────────────────
 # FILE HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+def _load_json(path: str, default):
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return default
+
 def load_open_positions() -> dict:
     from db_state import load_state as _db_load
     db = _db_load()
@@ -96,7 +102,13 @@ def _save_json(path: str, data):
 
 def save_open_positions(positions: dict):
     _save_json(OPEN_POSITIONS_FILE, positions)
-
+    try:
+        from db_state import load_state, save_state
+        state = load_state() or {}
+        state["positions"] = positions
+        save_state(state)
+    except Exception as e:
+        print(f"[DB] save_open_positions sync error: {e}")
 
 def load_paper_trades() -> list:
     return _load_json(PAPER_TRADES_FILE, [])
@@ -298,9 +310,6 @@ def get_entry_signal(df: pd.DataFrame) -> tuple[bool, dict]:
 def paper_buy(symbol: str, price: float, allocation: float,
               signal: dict, filter_log: list) -> dict:
     """Simulate a BUY order."""
-    positions = load_open_positions()
-    if symbol in positions:
-        return {"success": False, "reason": f"Already holding {symbol} — duplicate blocked"}
     brokerage = round(allocation * BROKERAGE_PCT, 2)
     qty       = int((allocation - brokerage) / price)
     if qty < 1:
@@ -347,7 +356,7 @@ def paper_sell(symbol: str, exit_price: float, reason: str) -> dict:
     qty       = pos["qty"]
     buy_price = pos["buy_price"]
     brokerage = round(exit_price * qty * BROKERAGE_PCT, 2)
-    pnl       = round((exit_price - buy_price) * qty - brokerage - pos["brokerage"], 2)
+    pnl       = round((exit_price - buy_price) * qty - brokerage - pos.get("brokerage", 0), 2)
     pnl_pct   = round((exit_price - buy_price) / buy_price * 100, 2)
     result    = "WIN" if pnl > 0 else "LOSS"
 
@@ -391,6 +400,16 @@ def update_tsl(symbol: str, current_price: float) -> Optional[str]:
 
     pos = positions[symbol]
 
+    # Ensure required keys exist
+    if pos.get("peak_price") is None:
+        pos["peak_price"] = current_price
+    if pos.get("tsl_active") is None:
+        pos["tsl_active"] = False
+    if pos.get("tsl_price") is None:
+        pos["tsl_price"] = None
+    if pos.get("sl_price") is None:
+        pos["sl_price"] = round(pos["buy_price"] * (1 - FIXED_SL_PCT), 2)
+
     # Update peak price
     if current_price > pos["peak_price"]:
         pos["peak_price"] = current_price
@@ -406,27 +425,24 @@ def update_tsl(symbol: str, current_price: float) -> Optional[str]:
     # Update TSL level (trail up with peak)
     if pos["tsl_active"]:
         new_tsl = round(pos["peak_price"] * (1 - TSL_TRAIL_PCT), 2)
-        if new_tsl > pos["tsl_price"]:
+        if pos["tsl_price"] is None or new_tsl > pos["tsl_price"]:
             pos["tsl_price"] = new_tsl
 
-    # Check exits
-    if pos["tsl_active"] and current_price <= pos["tsl_price"]:
+    # Check TSL exit
+    if pos["tsl_active"] and pos["tsl_price"] and current_price <= pos["tsl_price"]:
         positions[symbol] = pos
         save_open_positions(positions)
         return f"TSL hit ₹{pos['tsl_price']:.2f}"
 
+    # Check fixed SL exit
     if current_price <= pos["sl_price"]:
         positions[symbol] = pos
         save_open_positions(positions)
         return f"Fixed SL hit ₹{pos['sl_price']:.2f}"
 
-    # Overbought RSL exit (optional)
-    # if rsi > RSI_SELL_THRESHOLD: return "RSI overbought"
-
     positions[symbol] = pos
     save_open_positions(positions)
     return None
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN SCAN — runs on schedule
@@ -686,4 +702,9 @@ def get_portfolio_summary() -> dict:
         "open_count"     : len(rows),
         "max_positions"  : MAX_OPEN_POSITIONS,
     }
+
+
+
+
+
 

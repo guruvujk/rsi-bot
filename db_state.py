@@ -161,3 +161,84 @@ def load_trades():
     except Exception as e:
         print(f"[DB] Load trades error: {e}")
         return []
+# ── AUTO CONFIG ────────────────────────────────────────────────────────────────
+DEFAULT_CONFIG = {
+    "rsi_buy"            : 30,
+    "rsi_sell"           : 70,
+    "max_capital_per_trade": 10000,
+    "max_open_positions" : 10,
+    "auto_trade_enabled" : True,
+    "watchlist"          : [],
+}
+
+def init_auto_config_table():
+    """Create auto_config table if not exists."""
+    if not DATABASE_URL:
+        return
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS auto_config (
+                key   TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        # Seed defaults if table is empty
+        for k, v in DEFAULT_CONFIG.items():
+            cur.execute("""
+                INSERT INTO auto_config (key, value)
+                VALUES (%s, %s)
+                ON CONFLICT (key) DO NOTHING
+            """, (k, json.dumps(v)))
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("[DB] auto_config table ready")
+    except Exception as e:
+        print(f"[DB] auto_config init error: {e}")
+
+def load_auto_config():
+    """Load all config keys from DB. Returns dict."""
+    if not DATABASE_URL:
+        return DEFAULT_CONFIG.copy()
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT key, value FROM auto_config")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        config = DEFAULT_CONFIG.copy()
+        for k, v in rows:
+            try:
+                config[k] = json.loads(v)
+            except Exception:
+                config[k] = v
+        return config
+    except Exception as e:
+        print(f"[DB] load_auto_config error: {e}")
+        return DEFAULT_CONFIG.copy()
+
+def save_auto_config(updates: dict):
+    """Upsert one or more config keys into DB."""
+    if not DATABASE_URL:
+        return
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        for k, v in updates.items():
+            cur.execute("""
+                INSERT INTO auto_config (key, value)
+                VALUES (%s, %s)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+            """, (k, json.dumps(v)))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[DB] save_auto_config error: {e}")
+
+def reset_auto_config():
+    """Reset all config keys to defaults."""
+    save_auto_config(DEFAULT_CONFIG)

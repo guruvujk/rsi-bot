@@ -18,8 +18,8 @@
       "itype": "STOCK",
       "stop_loss": 2377.48,
       "target": 2498.78,
-      "highest_price": 2452.8999,
-      "tsl_active": false
+      "highest_price": 2466.8,
+      "tsl_active": true
     },
     "BHARTIARTL.NS": {
       "qty": 1,
@@ -38,7 +38,7 @@
       "itype": "STOCK",
       "stop_loss": 1048.012,
       "target": 1101.482,
-      "highest_price": 1070.3,
+      "highest_price": 1077.7,
       "tsl_active": false
     },
     "PFE": {
@@ -171,5 +171,5 @@
   "losses": 0,
   "win_rate": 0,
   "realised_pnl": 0,
-  "return_pct": 256.86
+  "return_pct": 256.89
 }
