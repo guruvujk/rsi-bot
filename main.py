@@ -766,7 +766,6 @@ if __name__ == "__main__":
         ("📈 Indices",     INDICES),
         ("💰 Commodities", COMMODITIES),
         ("💱 Forex",       FOREX),
-        ("🪙 Crypto",      CRYPTO),
         ("📊 ETFs",        ETFS),
         ("🌍 US Stocks",   US_STOCKS),
     ]:
