@@ -269,7 +269,7 @@ FOREX = {
     ]
 }
 
-CRYPTO = {
+if CRYPTO["enabled"]:
     "enabled": True,
     "symbols": [
         # ✅ REMOVED: XRP-USD and LINK-USD (consistent losers)
