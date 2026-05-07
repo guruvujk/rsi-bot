@@ -47,7 +47,7 @@ LOAD_SAVED_POSITIONS = True    # FIX: enabled — crash recovery works now
 
 # ── RSI Settings ────────────────────────────────────
 RSI_PERIOD = 14
-RSI_BUY    = 40    # ✅ UPDATED: was 42 → 40 (catches more oversold entries)
+RSI_BUY    = 45    # ✅ UPDATED: was 42 → 40 (catches more oversold entries)
 RSI_SELL   = 70    # FIX: tighter (was 65) — only strong overbought signals
 
 # ── Scan Intervals (seconds) ─────────────────────────
@@ -248,7 +248,7 @@ ETFS = {
 }
 
 COMMODITIES = {
-    "enabled": True,
+    "enabled": False,
     "symbols": [
         "GC=F","SI=F","PL=F","PA=F",
         "CL=F","BZ=F","NG=F","RB=F",
@@ -283,12 +283,8 @@ CRYPTO = {
 US_STOCKS = {
     "enabled": True,
     "symbols": [
-        "AAPL","MSFT","GOOGL","AMZN","META",
-        "NVDA","TSLA","NFLX",
-        "JPM","BAC","GS","V","MA",
-        "JNJ","PFE","UNH",
-        "WMT","KO","MCD",
-        "XOM","CVX",
+        "AAPL",
+        "MSFT",
     ]
 }
 
