@@ -74,6 +74,7 @@ WATCHLIST_US = [
 WATCHLIST_CRYPTO = []
 
 WATCHLIST = WATCHLIST_NSE + WATCHLIST_US
+MAX_CAPITAL_PER_TRADE_US = 2_500.0
 
 IST = pytz.timezone("Asia/Kolkata")
 
@@ -587,7 +588,7 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
                 continue
 
             price      = signal["price"]
-            allocation = get_adjusted_allocation(symbol, MAX_CAPITAL_PER_TRADE)
+            allocation = MAX_CAPITAL_PER_TRADE_US if symbol in WATCHLIST_US else get_adjusted_allocation(symbol, MAX_CAPITAL_PER_TRADE)
             result     = paper_buy(symbol, price, allocation, signal, filter_log)
             if result["success"]:
                 buys.append(result["position"])
