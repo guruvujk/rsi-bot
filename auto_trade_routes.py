@@ -248,3 +248,34 @@ def get_gainers():
 @auto_trade_bp.route("/watchlist", methods=["GET"])
 def get_watchlist():
     return jsonify({"watchlist": WATCHLIST, "count": len(WATCHLIST)})
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG — view and hot-update engine settings
+# ─────────────────────────────────────────────────────────────────────────────
+@auto_trade_bp.route("/config", methods=["GET"])
+def get_config():
+    import auto_trade_engine as eng
+    return jsonify({
+        "RSI_PERIOD"           : eng.RSI_PERIOD,
+        "RSI_BUY_THRESHOLD"    : eng.RSI_BUY_THRESHOLD,
+        "RSI_SELL_THRESHOLD"   : eng.RSI_SELL_THRESHOLD,
+        "FIXED_SL_PCT"         : eng.FIXED_SL_PCT,
+        "TSL_ACTIVATE_PCT"     : eng.TSL_ACTIVATE_PCT,
+        "TSL_TRAIL_PCT"        : eng.TSL_TRAIL_PCT,
+        "MAX_CAPITAL_PER_TRADE": eng.MAX_CAPITAL_PER_TRADE,
+        "MAX_OPEN_POSITIONS"   : eng.MAX_OPEN_POSITIONS,
+        "BROKERAGE_PCT"        : eng.BROKERAGE_PCT,
+    })
+
+@auto_trade_bp.route("/config", methods=["POST"])
+def set_config():
+    import auto_trade_engine as eng
+    data = request.get_json(silent=True) or {}
+    updated = {}
+    allowed = ["RSI_BUY_THRESHOLD", "RSI_SELL_THRESHOLD", "FIXED_SL_PCT",
+               "TSL_ACTIVATE_PCT", "TSL_TRAIL_PCT", "MAX_CAPITAL_PER_TRADE",
+               "MAX_OPEN_POSITIONS"]
+    for key in allowed:
+        if key in data:
+            setattr(eng, key, type(getattr(eng, key))(data[key]))
+            updated[key] = getattr(eng, key)
+    return jsonify({"status": "updated", "updated": updated})
