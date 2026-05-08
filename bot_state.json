@@ -1,21 +1,6 @@
 {
-  "capital": 338821.88430000003,
+  "capital": 328781.95930000005,
   "positions": {
-    "TCS.NS": {
-      "qty": 1,
-      "buy_price": 2426.0,
-      "buy_time": "08:04",
-      "itype": "STOCK",
-      "stop_loss": 2377.48,
-      "target": 2498.78,
-      "highest_price": 2466.8,
-      "tsl_active": true,
-      "sl_price": 2377.48,
-      "peak_price": 2466.8,
-      "allocation": 2426.0,
-      "entry_time": "08:04",
-      "tsl_price": 2343.46
-    },
     "BHARTIARTL.NS": {
       "qty": 1,
       "buy_price": 1829.6,
@@ -54,7 +39,25 @@
       "stop_loss": 194.04,
       "target": 203.94,
       "highest_price": 198.0,
-      "tsl_active": false
+      "tsl_active": false,
+      "sl_price": 194.04,
+      "peak_price": 198.0,
+      "allocation": 10296.0,
+      "entry_time": "07:27"
+    },
+    "AAPL": {
+      "qty": 35,
+      "buy_price": 286.855,
+      "buy_time": "19:54",
+      "itype": "US_STOCK",
+      "stop_loss": 279.6836,
+      "target": 295.46065,
+      "highest_price": 287.45,
+      "tsl_active": false,
+      "sl_price": 279.6836,
+      "peak_price": 287.45,
+      "allocation": 10039.93,
+      "entry_time": "19:54"
     }
   },
   "trades": [
@@ -225,6 +228,20 @@
       "pnl": 86.6,
       "reason": "TARGET HIT \ud83c\udfaf",
       "itype": "STOCK"
+    },
+    {
+      "date": "07-May-2026",
+      "time": "01:24",
+      "symbol": "AAPL",
+      "action": "BUY",
+      "price": 286.86,
+      "buy_price": 286.86,
+      "sell_price": "",
+      "qty": 35,
+      "rsi": 40.1,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 2,
@@ -232,5 +249,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 238.73
+  "return_pct": 230.74
 }
