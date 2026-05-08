@@ -397,7 +397,9 @@ def paper_sell(symbol: str, exit_price: float, reason: str) -> dict:
 
     try:
         from telegram_alerts import alert_sell as _alert_sell
-        _alert_sell(symbol, f"₹{exit_price:.2f}", qty, reason, pnl, 0, 0, "STOCK")
+        from db_state import load_state as _ls
+        _cap = (_ls() or {}).get("capital", 0)
+        _alert_sell(symbol, f"₹{exit_price:.2f}", qty, reason, pnl, 0, _cap, "STOCK")
     except Exception as e:
         print(f"  [Telegram] alert_sell failed: {e}")
 
