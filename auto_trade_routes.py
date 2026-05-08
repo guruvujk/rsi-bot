@@ -292,5 +292,21 @@ def upstox_sync():
     if not token:
         return jsonify({"error": "No token. Visit /api/auto/upstox/login first"}), 401
     sync_to_bot(token)
-    return jsonify({"status": "synced"})
+    return jsonify({"status": "synced", "db_saved": True})
 
+@auto_trade_bp.route("/upstox/token", methods=["GET"])
+def upstox_token_status():
+    from upstox_db import get_token_status
+    return jsonify(get_token_status())
+
+@auto_trade_bp.route("/upstox/positions", methods=["GET"])
+def upstox_positions_from_db():
+    from upstox_db import load_positions
+    positions = load_positions()
+    return jsonify({"source": "neon_db", "count": len(positions), "positions": positions})
+
+@auto_trade_bp.route("/upstox/history", methods=["GET"])
+def upstox_position_history():
+    from upstox_db import get_position_history
+    history = get_position_history()
+    return jsonify({"total": len(history), "history": history})

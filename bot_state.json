@@ -1,5 +1,5 @@
 {
-  "capital": 328781.95930000005,
+  "capital": 315102.95930000005,
   "positions": {
     "BHARTIARTL.NS": {
       "qty": 1,
@@ -38,7 +38,7 @@
       "itype": "STOCK",
       "stop_loss": 194.04,
       "target": 203.94,
-      "highest_price": 198.0,
+      "highest_price": 198.56,
       "tsl_active": false,
       "sl_price": 194.04,
       "peak_price": 198.0,
@@ -58,6 +58,31 @@
       "peak_price": 287.45,
       "allocation": 10039.93,
       "entry_time": "19:54"
+    },
+    "MARUTI.NS": {
+      "qty": 1,
+      "buy_price": 13679.0,
+      "buy_time": "05:08",
+      "itype": "STOCK",
+      "stop_loss": 13405.42,
+      "target": 14089.37,
+      "highest_price": 13748.0,
+      "tsl_active": false
+    },
+    "SUNPHARMA.NS": {
+      "symbol": "SUNPHARMA.NS",
+      "qty": 1,
+      "buy_price": 0.0,
+      "sl_price": 0.0,
+      "tsl_active": false,
+      "peak_price": 1847.9,
+      "tsl_price": null,
+      "allocation": 0.0,
+      "brokerage": 0,
+      "entry_time": "Upstox Import",
+      "itype": "STOCK",
+      "source": "UPSTOX",
+      "stop_loss": 0.0
     }
   },
   "trades": [
@@ -242,6 +267,34 @@
       "pnl": "",
       "reason": "RSI BUY",
       "itype": "STOCK"
+    },
+    {
+      "date": "08-May-2026",
+      "time": "10:38",
+      "symbol": "MARUTI.NS",
+      "action": "BUY",
+      "price": 13679.0,
+      "buy_price": 13679.0,
+      "sell_price": "",
+      "qty": 1,
+      "rsi": 42.8,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "08-May-2026",
+      "time": "10:39",
+      "symbol": "MARUTI.NS",
+      "action": "BUY",
+      "price": 13684.0,
+      "buy_price": 13684.0,
+      "sell_price": "",
+      "qty": 1,
+      "rsi": 44.1,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 2,
@@ -249,5 +302,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 230.74
+  "return_pct": 218.95
 }

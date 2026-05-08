@@ -675,7 +675,7 @@ def get_portfolio_summary() -> dict:
             price = pos["buy_price"]
 
         pnl     = round((price - pos["buy_price"]) * pos["qty"], 2)
-        pnl_pct = round((price - pos["buy_price"]) / pos["buy_price"] * 100, 2)
+       pnl_pct = round((price - pos["buy_price"]) / pos["buy_price"] * 100, 2) if pos.get("buy_price")      else 0.0
         total_invested += pos.get("allocation", pos["buy_price"] * pos["qty"])
         USD_TO_INR      = get_usd_inr_rate()
         pnl_inr         = round(pnl * USD_TO_INR, 2) if pos.get("itype") == "US_STOCK" else pnl

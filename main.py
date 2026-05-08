@@ -94,6 +94,8 @@ def load_state(trader: PaperTrader):
     try:
         from db_state import load_state as db_load, load_trades as db_load_trades, init_db
         init_db()
+        from upstox_db import init_upstox_tables
+        init_upstox_tables()
         data = db_load()
         if data:
             trader.capital = float(data.get("capital", CAPITAL))
