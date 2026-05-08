@@ -747,6 +747,8 @@ def run_scheduler():
     schedule.every().day.at("15:25").do(nse_eod_close)
     schedule.every().day.at("15:35").do(nse_eod_summary)
     schedule.every().day.at("23:00").do(crypto_summary)
+    from upstox_reminder import send_upstox_reminder
+    schedule.every().day.at("08:30").do(send_upstox_reminder)
     while True:
         schedule.run_pending()
         time.sleep(1)
