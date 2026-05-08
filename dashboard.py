@@ -533,9 +533,34 @@ def start_dashboard():
     logging.getLogger('engineio').setLevel(logging.ERROR)   # ← ADD
     threading.Thread(target=push_updates, daemon=True).start()
     socketio.run(app, host='0.0.0.0', port=5000, log_output=False, debug=False, allow_unsafe_werkzeug=True)
+
+@app.route("/upstox/callback")
+def upstox_callback():
+    code = request.args.get("code")
+    if not code:
+        return "No code received", 400
+    from upstox_integration import get_access_token
+    token = get_access_token(code)
+    if token:
+        return "<h2>✅ Upstox Connected!</h2>"
+    return "<h2>❌ Auth failed</h2>", 500
+
+@app.route("/upstox/postback", methods=["POST"])
+def upstox_postback():
+    data = request.get_json(silent=True) or {}
+    try:
+        from upstox_integration import load_token, sync_to_bot
+        token = load_token()
+        if token:
+            sync_to_bot(token)
+    except Exception as e:
+        print(f"[Upstox] {e}")
+    return jsonify({"status": "ok"})
 @app.route('/api/state')
 def api_state():
     from db_state import load_state as _db
     s = _db() or {}
     return jsonify({'capital': s.get('capital', 100000), 'positions': len(s.get('positions', {}))})
+
+
 

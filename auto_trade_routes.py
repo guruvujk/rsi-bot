@@ -279,3 +279,18 @@ def set_config():
             setattr(eng, key, type(getattr(eng, key))(data[key]))
             updated[key] = getattr(eng, key)
     return jsonify({"status": "updated", "updated": updated})
+# UPSTOX
+@auto_trade_bp.route("/upstox/login", methods=["GET"])
+def upstox_login():
+    from upstox_integration import get_login_url
+    return jsonify({"login_url": get_login_url()})
+
+@auto_trade_bp.route("/upstox/sync", methods=["POST"])
+def upstox_sync():
+    from upstox_integration import load_token, sync_to_bot
+    token = load_token()
+    if not token:
+        return jsonify({"error": "No token. Visit /api/auto/upstox/login first"}), 401
+    sync_to_bot(token)
+    return jsonify({"status": "synced"})
+
