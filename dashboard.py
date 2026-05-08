@@ -227,6 +227,105 @@ DASHBOARD_HTML = """
     </table>
   </div>
 </div>
+<div class="grid1" style="margin-top:0">
+  <div class="box">
+    <div class="box-title" style="background:#eff6ff;border-bottom:1px solid #bfdbfe;">
+      <span style="color:#2563eb;">🔗 Upstox — Real Portfolio</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="upstox-token-status" style="font-size:11px;padding:2px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;font-weight:600;">Token OK</span>
+        <button onclick="upstoxLogin()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid #bfdbfe;background:#fff;color:#2563eb;cursor:pointer;font-weight:600;">🔑 Login</button>
+        <button onclick="upstoxSync()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:600;">🔄 Sync</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th><th>Type</th><th>Qty</th>
+          <th>Buy @</th><th>LTP</th><th>P&L</th>
+          <th>SL Price</th><th>TSL</th><th>Synced</th>
+        </tr>
+      </thead>
+      <tbody id="upstox-body">
+        <tr><td colspan="9" class="empty-msg">Click Sync to load positions</td></tr>
+      </tbody>
+    </table>
+    <div id="upstox-sync-msg" style="padding:8px 16px;font-size:12px;color:#64748b;display:none;"></div>
+  </div>
+</div>
+
+<script>
+function upstoxLogin() {
+  fetch('/api/auto/upstox/login')
+    .then(r => r.json())
+    .then(d => {
+      window.open(d.login_url, '_blank');
+    });
+}
+
+function upstoxSync() {
+  const msg = document.getElementById('upstox-sync-msg');
+  msg.style.display = 'block';
+  msg.textContent = '⏳ Syncing...';
+  fetch('/api/auto/upstox/sync', {method:'POST'})
+    .then(r => r.json())
+    .then(d => {
+      msg.textContent = '✅ Synced at ' + new Date().toLocaleTimeString('en-IN');
+      loadUpstoxPositions();
+    })
+    .catch(() => { msg.textContent = '❌ Sync failed'; });
+}
+
+function loadUpstoxPositions() {
+  fetch('/api/auto/upstox/token')
+    .then(r => r.json())
+    .then(t => {
+      const el = document.getElementById('upstox-token-status');
+      if (t.is_valid) {
+        el.textContent = '✅ Token valid till ' + t.expires_at;
+        el.style.background = '#dcfce7';
+        el.style.color = '#16a34a';
+      } else {
+        el.textContent = '❌ Token expired — Login';
+        el.style.background = '#fee2e2';
+        el.style.color = '#dc2626';
+      }
+    });
+
+  fetch('/api/auto/upstox/positions')
+    .then(r => r.json())
+    .then(d => {
+      const tbody = document.getElementById('upstox-body');
+      if (!d.positions || d.positions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">No positions in DB</td></tr>';
+        return;
+      }
+      tbody.innerHTML = d.positions.map(p => {
+        const pnlClass = p.pnl > 0 ? 'green' : p.pnl < 0 ? 'red' : 'gray';
+        const buyFmt   = p.itype === 'US_STOCK' ? '$' + p.buy_price : '₹' + Number(p.buy_price).toLocaleString('en-IN');
+        const ltpFmt   = p.itype === 'US_STOCK' ? '$' + p.ltp       : '₹' + Number(p.ltp).toLocaleString('en-IN');
+        const slFmt    = p.sl_price > 0 ? (p.itype==='US_STOCK'?'$':'₹') + Number(p.sl_price).toLocaleString('en-IN') : '—';
+        const pnlFmt   = (p.pnl >= 0 ? '+₹' : '-₹') + Math.abs(p.pnl).toLocaleString('en-IN');
+        const sun      = p.symbol === 'SUNPHARMA.NS' && p.buy_price === 0;
+        return `<tr>
+          <td style="font-weight:600">${p.symbol}${sun ? ' <span style="font-size:10px;color:#f59e0b;">⏳Mon</span>' : ''}</td>
+          <td><span class="badge" style="background:#eff6ff;color:#2563eb">${p.itype}</span></td>
+          <td>${p.qty}</td>
+          <td>${buyFmt}</td>
+          <td>${ltpFmt}</td>
+          <td class="${pnlClass}" style="font-weight:600">${sun ? '—' : pnlFmt}</td>
+          <td style="color:#dc2626">${slFmt}</td>
+          <td>${p.tsl_active ? '<span class="badge badge-buy">ON</span>' : '<span class="badge badge-hold">OFF</span>'}</td>
+          <td style="font-size:11px;color:#94a3b8">${p.synced_at || '—'}</td>
+        </tr>`;
+      }).join('');
+    });
+}
+
+// Load on page open
+loadUpstoxPositions();
+// Refresh every 30 seconds
+setInterval(loadUpstoxPositions, 30000);
+</script>
 
 <script>
   var socket = io();
