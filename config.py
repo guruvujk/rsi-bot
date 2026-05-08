@@ -13,7 +13,7 @@ DRAWDOWN_PCT = 0.10  # 10% floor = ₹90,000  # 5% — pause BUY if capital drop
 #   8. Removed XRP-USD and LINK-USD from CRYPTO (losing, 2026-05-06)
 
 # ── Telegram ────────────────────────────────────────
-TELEGRAM_TOKEN   = "8535585483:AAHjKrywAN7RdkgtI1v2wxWhLQceSpzclBQ"
+TELEGRAM_TOKEN   = "8694229997:AAGfe1savDm39EsXsjuswJdGPbRD_ocGNaU"
 TELEGRAM_CHAT_ID = "5782497984"
 
 # ── Capital & Risk ───────────────────────────────────
