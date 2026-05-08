@@ -71,7 +71,51 @@ DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-  <title>RSI Bot — Paper Trade Dashboard</title>
+ <title>RSI Bot — Paper Trade Dashboard</title>
+  <script>
+function addManualPosition() {
+  const symbol    = document.getElementById('m-symbol').value.trim().toUpperCase();
+  const qty       = document.getElementById('m-qty').value;
+  const buy_price = document.getElementById('m-price').value;
+  const broker    = document.getElementById('m-broker').value;
+  const itype     = document.getElementById('m-itype').value;
+  const msg       = document.getElementById('m-msg');
+  if (!symbol || !qty || !buy_price) {
+    msg.textContent = '❌ Fill all fields';
+    msg.style.color = '#dc2626';
+    return;
+  }
+  msg.textContent = '⏳ Adding...';
+  fetch('/api/auto/manual/add', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({symbol, qty: parseInt(qty), buy_price: parseFloat(buy_price), broker, itype})
+  }).then(r => r.json()).then(d => {
+    if (d.status === 'added') {
+      msg.textContent = '✅ Added — SL: ₹' + d.sl_price;
+      msg.style.color = '#16a34a';
+      document.getElementById('m-symbol').value = '';
+      document.getElementById('m-qty').value    = '';
+      document.getElementById('m-price').value  = '';
+      loadUpstoxPositions();
+    } else {
+      msg.textContent = '❌ ' + (d.error || 'Failed');
+      msg.style.color = '#dc2626';
+    }
+  });
+}
+
+function removeManualPosition(symbol, broker) {
+  if (!confirm('Remove ' + symbol + ' from ' + broker + '?')) return;
+  fetch('/api/auto/manual/remove', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({symbol, broker})
+  }).then(r => r.json()).then(d => {
+    if (d.status === 'removed') loadUpstoxPositions();
+  });
+}
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -205,7 +249,7 @@ DASHBOARD_HTML = """
       <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span>
     </div>
     <table>
-      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th></tr></thead>
+      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th><th>Broker</th><th></th></tr></thead>
       <tbody id="positions-body">
         <tr><td colspan="5" class="empty-msg">No open positions</td></tr>
       </tbody>
@@ -225,6 +269,47 @@ DASHBOARD_HTML = """
         <tr><td colspan="9" class="empty-msg">No trades yet</td></tr>
       </tbody>
     </table>
+  </div>
+</div>
+<div class="grid1">
+  <div class="box">
+    <div class="box-title" style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;">
+      <span style="color:#16a34a;">➕ Add Manual Position (Kite / Groww / Any Broker)</span>
+    </div>
+    <div style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:#64748b;">Symbol</label>
+        <input id="m-symbol" placeholder="SUNPHARMA.NS" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;width:140px;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:#64748b;">Qty</label>
+        <input id="m-qty" type="number" placeholder="2" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;width:80px;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:#64748b;">Buy Price</label>
+        <input id="m-price" type="number" placeholder="1852.30" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;width:110px;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:#64748b;">Broker</label>
+        <select id="m-broker" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;width:110px;">
+          <option>Kite</option>
+          <option>Groww</option>
+          <option>Upstox</option>
+          <option>Manual</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:#64748b;">Type</label>
+        <select id="m-itype" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;width:110px;">
+          <option value="STOCK">STOCK</option>
+          <option value="US_STOCK">US_STOCK</option>
+          <option value="CRYPTO">CRYPTO</option>
+          <option value="COMMODITY">COMMODITY</option>
+        </select>
+      </div>
+      <button onclick="addManualPosition()" style="padding:7px 18px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">➕ Add</button>
+      <span id="m-msg" style="font-size:12px;color:#64748b;"></span>
+    </div>
   </div>
 </div>
 <div class="grid1" style="margin-top:0">
@@ -422,7 +507,10 @@ setInterval(loadUpstoxPositions, 30000);
             <td>${fmtP(p.buy_price, isUSD)}</td>
             <td>${fmtP(p.ltp, isUSD)}</td>
             <td style="color:${upnlColor};font-weight:600;">₹${Number(p.itype === 'US_STOCK' ? p.pnl * 84 : p.pnl).toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
-            <td>${tslBadge}</td></tr>`;
+            <td>${tslBadge}</td>
+            <td style="font-size:11px;color:#64748b;">${p.source || 'Bot'}</td>
+            <td>${p.source && p.source !== 'Bot' ? `<button onclick="removeManualPosition('${sym}','${p.source||''}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;cursor:pointer;">✕</button>` : ''}</td>
+            </tr>`;
         }
         document.getElementById('positions-body').innerHTML =
           phtml || '<tr><td colspan="5" class="empty-msg">No open positions</td></tr>';

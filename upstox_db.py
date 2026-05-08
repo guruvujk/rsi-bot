@@ -189,7 +189,7 @@ def sync_positions_to_db(positions: list):
     cur  = conn.cursor()
 
     # Mark all existing positions as closed (will re-insert open ones)
-    cur.execute("UPDATE upstox_positions SET is_open = FALSE")
+    cur.execute("UPDATE upstox_positions SET is_open = FALSE WHERE source = 'upstox' OR source IS NULL")
 
     now = datetime.now()
     for pos in positions:
@@ -211,11 +211,13 @@ def sync_positions_to_db(positions: list):
         cur.execute("""
             INSERT INTO upstox_positions
                 (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
-                 sl_price, tp_price, tsl_active, synced_at, is_open)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE)
+                 sl_price, tp_price, tsl_active, synced_at, is_open, broker, source)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE,'Upstox','upstox')
             ON CONFLICT DO NOTHING
         """, (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
               sl_price, tp_price, tsl_active, now))
+
+        # Also update any existing open row for this symbol
 
         # Also update any existing open row for this symbol
         cur.execute("""
@@ -249,7 +251,9 @@ def load_positions() -> list:
         cur  = conn.cursor()
         cur.execute("""
             SELECT symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
-                   sl_price, tp_price, tsl_active, synced_at
+                   sl_price, tp_price, tsl_active, synced_at,
+                   COALESCE(broker,'Upstox') as broker,
+                   COALESCE(source,'upstox') as source
             FROM upstox_positions
             WHERE is_open = TRUE
             ORDER BY synced_at DESC
@@ -269,10 +273,13 @@ def load_positions() -> list:
             "tp_price"  : r[8],
             "tsl_active": r[9],
             "synced_at" : r[10].strftime("%d-%b-%Y %H:%M") if r[10] else None,
+            "broker": r[11],
+            "source": r[12],
         } for r in rows]
     except Exception as e:
         print(f"[UpstoxDB] load_positions error: {e}")
         return []
+          
 
 
 def close_position(symbol: str):

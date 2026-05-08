@@ -56,8 +56,8 @@
       "itype": "US_STOCK",
       "stop_loss": 279.6836,
       "target": 295.46065,
-      "highest_price": 287.45,
-      "tsl_active": false,
+      "highest_price": 294.56,
+      "tsl_active": true,
       "sl_price": 279.6836,
       "peak_price": 287.45,
       "allocation": 10039.93,
@@ -72,7 +72,7 @@
       "itype": "STOCK",
       "stop_loss": 13405.42,
       "target": 14089.37,
-      "highest_price": 13748.0,
+      "highest_price": 13777.0,
       "tsl_active": false,
       "sl_price": 13405.42,
       "peak_price": 13748.0,
@@ -299,5 +299,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 217.1
+  "return_pct": 234.33
 }

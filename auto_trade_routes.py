@@ -310,3 +310,83 @@ def upstox_position_history():
     from upstox_db import get_position_history
     history = get_position_history()
     return jsonify({"total": len(history), "history": history})
+# ── MANUAL POSITIONS ──────────────────────────────────────────────────────────
+@auto_trade_bp.route("/manual/add", methods=["POST"])
+def manual_add_position():
+    data      = request.get_json(force=True)
+    symbol    = data.get("symbol", "").upper().strip()
+    qty       = int(data.get("qty", 0))
+    buy_price = float(data.get("buy_price", 0))
+    broker    = data.get("broker", "Manual")
+    itype     = data.get("itype", "STOCK")
+    if not symbol or qty <= 0 or buy_price <= 0:
+        return jsonify({"error": "symbol, qty and buy_price required"}), 400
+    sl_price = round(buy_price * 0.95, 2)
+
+    # ── Save to Neon DB ───────────────────────────────────────────────────────
+    try:
+        from db_state import get_conn
+        conn = get_conn()
+        cur  = conn.cursor()
+        cur.execute("""
+            INSERT INTO upstox_positions
+                (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
+                 sl_price, tp_price, tsl_active, synced_at, is_open,
+                 broker, source)
+            VALUES (%s, %s, %s, %s, %s, 0, 0, %s, 0, FALSE, NOW(), TRUE, %s, 'manual')
+        """, (symbol, itype, qty, buy_price, buy_price, sl_price, broker))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # ── Save to bot_state (in-memory + db_state) ──────────────────────────────
+    try:
+        from db_state import load_state, save_state
+        state     = load_state() or {}
+        positions = state.get("positions", {})
+        positions[symbol + "_" + broker] = {
+            "symbol"    : symbol,
+            "qty"       : qty,
+            "buy_price" : buy_price,
+            "sl_price"  : sl_price,
+            "tsl_active": False,
+            "peak_price": buy_price,
+            "tsl_price" : None,
+            "allocation": round(buy_price * qty, 2),
+            "brokerage" : 0,
+            "entry_time": "Manual",
+            "itype"     : itype,
+            "source"    : broker,
+        }
+        state["positions"] = positions
+        save_state(state)
+    except Exception as e:
+        print(f"[Manual] state save error: {e}")
+
+    return jsonify({"status": "added", "symbol": symbol, "broker": broker, "sl_price": sl_price})
+@auto_trade_bp.route("/manual/remove", methods=["POST"])
+def manual_remove_position():
+    data   = request.get_json(force=True)
+    symbol = data.get("symbol", "").upper().strip()
+    broker = data.get("broker", "")
+    if not symbol:
+        return jsonify({"error": "symbol required"}), 400
+    try:
+        from upstox_db import close_position
+        close_position(symbol)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    try:
+        from db_state import load_state, save_state
+        state     = load_state() or {}
+        positions = state.get("positions", {})
+        key = symbol + "_" + broker if broker else symbol
+        positions.pop(key, None)
+        positions.pop(symbol, None)
+        state["positions"] = positions
+        save_state(state)
+    except Exception as e:
+        print(f"[Manual] state remove error: {e}")
+    return jsonify({"status": "removed", "symbol": symbol})
