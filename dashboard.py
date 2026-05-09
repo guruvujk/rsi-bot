@@ -19,7 +19,7 @@ try:
 except Exception as _e:
     print(f"[Dashboard] DB load error: {_e}")
     _saved = None
-
+ 
 
 
 bot_state = {
@@ -272,7 +272,10 @@ function removeManualPosition(symbol, broker) {
       <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span>
     </div>
     <table>
-      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th><th></th></tr></thead></th></tr></thead>
+      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th><th></th></tr></thead>
+      <th>Symbol</th><th>Type</th><th>Qty</th>
+      <th>Buy @</th><th>LTP</th><th>P&L</th>
+      <th>SL Price</th><th>TSL</th><th>Synced</th><th></th>
       <tbody id="positions-body">
         <tr><td colspan="5" class="empty-msg">No open positions</td></tr>
       </tbody>
@@ -350,7 +353,7 @@ function removeManualPosition(symbol, broker) {
         <tr>
           <th>Symbol</th><th>Type</th><th>Qty</th>
           <th>Buy @</th><th>LTP</th><th>P&L</th>
-          <th>SL Price</th><th>TSL</th><th>Synced</th>
+          <th>SL Price</th><th>TSL</th><th>Synced</th><th></th>
         </tr>
       </thead>
       <tbody id="upstox-body">
@@ -424,6 +427,17 @@ function loadUpstoxPositions() {
           <td style="color:#dc2626">${slFmt}</td>
           <td>${p.tsl_active ? '<span class="badge badge-buy">ON</span>' : '<span class="badge badge-hold">OFF</span>'}</td>
           <td style="font-size:11px;color:#94a3b8">${p.synced_at || '—'}</td>
+        </tr>`;
+        
+          <td><span class="badge" style="background:#eff6ff;color:#2563eb">${p.itype}</span></td>
+          <td>${p.qty}</td>
+          <td>${buyFmt}</td>
+          <td>${ltpFmt}</td>
+          <td class="${pnlClass}" style="font-weight:600">${sun ? '—' : pnlFmt}</td>
+          <td style="color:#dc2626">${slFmt}</td>
+          <td>${p.tsl_active ? '<span class="badge badge-buy">ON</span>' : '<span class="badge badge-hold">OFF</span>'}</td>
+          <td style="font-size:11px;color:#94a3b8">${p.synced_at || '—'}</td>
+          <td><button onclick="removePosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;cursor:pointer;">✕</button></td>
         </tr>`;
       }).join('');
     });
@@ -531,27 +545,14 @@ setInterval(loadUpstoxPositions, 30000);
             <td>${fmtP(p.ltp, isUSD)}</td>
             <td style="color:${upnlColor};font-weight:600;">₹${Number(p.itype === 'US_STOCK' ? p.pnl * 84 : p.pnl).toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
             <td>${tslBadge}</td>
-            <td style="font-size:11px;color:#64748b;">${p.source || 'Bot'}</td>
-            <td>${p.source && p.source !== 'Bot' ? `<button onclick="removeManualPosition('${sym}','${p.source||''}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;cursor:pointer;">✕</button>` : ''}</td>
+            <td><button onclick="removePosition('${sym}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;cursor:pointer;">✕</button></td>
             </tr>`;
         }
         document.getElementById('positions-body').innerHTML =
-          phtml || '<tr><td colspan="5" class="empty-msg">No open positions</td></tr>';
-          phtml += `<tr>
-    <td>${sym}</td><td>${p.qty}</td>
-    <td>${fmtP(p.buy_price, isUSD)}</td>
-    <td>${fmtP(p.ltp, isUSD)}</td>
-    <td style="color:${upnlColor};font-weight:600;">${fmtP(p.pnl, false)}</td>
-    <td>${tslBadge}</td>
-    <td>
-      <button onclick="removePosition('${sym}')" 
-        style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;
-               padding:3px 10px;font-size:11px;cursor:pointer;font-weight:600;">
-        ✕
-      </button>
-    </td>
-  </tr>`;
+          phtml || '<tr><td colspan="7" class="empty-msg">No open positions</td></tr>';
       }).catch(() => {});
+
+      // Trade Log
       
       // Trade Log
     const trades = [...(d.trades || [])].reverse().slice(0, 20);
@@ -577,12 +578,9 @@ setInterval(loadUpstoxPositions, 30000);
     document.getElementById('trade-log').innerHTML =
       thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
   });
-// ... existing trade log code above ...
-    document.getElementById('trade-log').innerHTML =
-      thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
-  });  // ← this closes socket.on('state_update')
 
-  // ← ADD removePosition HERE, after socket.on closes
+    
+
   function removePosition(symbol) {
     if (!confirm('Remove ' + symbol + ' from positions?')) return;
     fetch('/api/position/remove', {
@@ -600,9 +598,7 @@ setInterval(loadUpstoxPositions, 30000);
     });
   }
 
-</script>   // ← closing script tag
-</body>
-</html>
+
 </script>
 </body>
 </html>
