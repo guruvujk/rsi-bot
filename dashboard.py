@@ -81,7 +81,7 @@ DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>RSI Bot — Paper Trade Dashboard</title>
+    <title>RSI Bot — Real Portfolio Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -90,8 +90,6 @@ DASHBOARD_HTML = """
                   display: flex; align-items: center; justify-content: space-between;
                   box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
         .header h1 { font-size: 18px; font-weight: 600; color: #2563eb; }
-        .paper-badge { background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 600;
-                       padding: 3px 10px; border-radius: 20px; border: 1px solid #bfdbfe; }
         .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #16a34a;
                     animation: pulse 1.5s infinite; display: inline-block; margin-right: 6px; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
@@ -137,6 +135,7 @@ DASHBOARD_HTML = """
         .win-bar { height: 100%; border-radius: 4px; background: #16a34a; }
         .empty-msg { color: #94a3b8; text-align: center; padding: 24px; font-size: 13px; }
         button { cursor: pointer; }
+        input, select { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -144,7 +143,6 @@ DASHBOARD_HTML = """
 <div class="header">
     <div style="display:flex;align-items:center;gap:12px;">
         <h1>📈 RSI Algo Bot</h1>
-        <span class="paper-badge">📄 Paper Trade</span>
     </div>
     <div style="font-size:13px;color:#64748b;">
         <span class="live-dot"></span>Live &nbsp;|&nbsp;
@@ -169,24 +167,30 @@ DASHBOARD_HTML = """
 <div class="grid2">
     <!-- Watchlist Box -->
     <div class="box">
-        <div class="box-title">Watchlist — RSI Scanner <span id="wl-count" style="font-size:11px;color:#94a3b8;"></span></div>
+        <div class="box-title">Watchlist — RSI Scanner <span id="wl-count"></span></div>
         <table>
             <thead><tr><th>Symbol</th><th>Price</th><th>RSI</th><th>Signal</th></tr></thead>
             <tbody id="watchlist-body"><tr><td colspan="4" class="empty-msg">Waiting for scan...</td></tr></tbody>
         </table>
     </div>
 
-    <!-- Open Positions Box - REAL POSITIONS ONLY -->
+    <!-- Real Portfolio Box - FIXED -->
     <div class="box">
-        <div class="box-title">Real Portfolio — Live Positions <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span></div>
+        <div class="box-title">💰 Real Portfolio — Live Positions <span id="pos-count"></span></div>
         <table>
             <thead>
                 <tr>
-                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Broker</th><th></th>
+                    <th>Symbol</th>
+                    <th>Qty</th>
+                    <th>Buy @</th>
+                    <th>LTP</th>
+                    <th>P&L</th>
+                    <th>Broker</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="positions-body">
-                <tr><td colspan="7" class="empty-msg">No real positions found. Connect broker (Kite/Groww/Upstox)</td></tr>
+                <tr><td colspan="7" class="empty-msg">Loading real positions...</td></tr>
             </tbody>
         </table>
     </div>
@@ -195,7 +199,7 @@ DASHBOARD_HTML = """
 <!-- Trade Log -->
 <div class="grid1">
     <div class="box">
-        <div class="box-title">Trade Log (Last 20)</div>
+        <div class="box-title">📋 Trade Log (Last 20)</div>
         <table>
             <thead><tr><th>Date</th><th>Time</th><th>Symbol</th><th>Action</th><th>Price</th><th>Qty</th><th>RSI</th><th>P&L</th><th>Reason</th></tr></thead>
             <tbody id="trade-log"><tr><td colspan="9" class="empty-msg">No trades yet</td></tr></tbody>
@@ -203,45 +207,35 @@ DASHBOARD_HTML = """
     </div>
 </div>
 
-<!-- Add Manual Position (Real Broker Only) -->
+<!-- Add Real Position -->
 <div class="grid1">
     <div class="box">
-        <div class="box-title" style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;">
-            <span style="color:#16a34a;">➕ Add Real Position (Kite / Groww / Upstox / Zerodha)</span>
-        </div>
+        <div class="box-title" style="background:#f0fdf4;">➕ Add Real Position (Kite / Groww / Upstox / Zerodha)</div>
         <div style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-            <div><label style="font-size:11px;">Symbol</label><input id="m-symbol" placeholder="SUNPHARMA.NS" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:120px;"></div>
-            <div><label style="font-size:11px;">Qty</label><input id="m-qty" type="number" placeholder="2" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:80px;"></div>
-            <div><label style="font-size:11px;">Buy Price</label><input id="m-price" type="number" placeholder="1852.30" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:100px;"></div>
-            <div><label style="font-size:11px;">Broker</label><select id="m-broker" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option>Kite</option><option>Groww</option><option>Upstox</option><option>Zerodha</option></select></div>
-            <div><label style="font-size:11px;">Type</label><select id="m-itype" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option value="STOCK">STOCK</option><option value="US_STOCK">US_STOCK</option></select></div>
-            <button onclick="addRealPosition()" style="padding:7px 18px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-weight:600;">➕ Add Real Position</button>
-            <span id="m-msg" style="font-size:12px;color:#64748b;"></span>
+            <div><label>Symbol</label><br><input id="m-symbol" placeholder="SUNPHARMA.NS" style="width:120px;"></div>
+            <div><label>Qty</label><br><input id="m-qty" type="number" placeholder="2" style="width:70px;"></div>
+            <div><label>Buy Price</label><br><input id="m-price" type="number" placeholder="1852.30" style="width:100px;"></div>
+            <div><label>Broker</label><br><select id="m-broker"><option>Kite</option><option>Groww</option><option>Upstox</option><option>Zerodha</option></select></div>
+            <div><label>Type</label><br><select id="m-itype"><option value="STOCK">STOCK</option><option value="US_STOCK">US_STOCK</option></select></div>
+            <div><button onclick="addRealPosition()" style="background:#16a34a;color:#fff;border:none;padding:8px 16px;margin-top:20px;">➕ Add</button></div>
+            <div><span id="m-msg" style="font-size:12px;"></span></div>
         </div>
     </div>
 </div>
 
-<!-- Upstox Real Portfolio Section -->
+<!-- All Real Portfolios -->
 <div class="grid1">
     <div class="box">
-        <div class="box-title" style="background:#eff6ff;border-bottom:1px solid #bfdbfe;">
-            <span style="color:#2563eb;">🔗 All Real Portfolios (Kite / Groww / Upstox / Zerodha)</span>
-            <div>
-                <span id="upstox-token-status" style="font-size:11px;padding:2px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;">Ready</span>
-                <button onclick="upstoxLogin()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid #bfdbfe;background:#fff;color:#2563eb;">🔑 Upstox Login</button>
-                <button onclick="syncAllBrokers()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#2563eb;color:#fff;">🔄 Sync All</button>
-            </div>
-        </div>
+        <div class="box-title" style="background:#eff6ff;">🔗 All Real Portfolios (Kite/Groww/Upstox/Zerodha)</div>
         <table>
             <thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Broker</th><th>Synced</th><th></th></tr></thead>
-            <tbody id="upstox-body"><tr><td colspan="9" class="empty-msg">No real positions. Add via form above or sync broker.</td></tr></tbody>
+            <tbody id="upstox-body"><tr><td colspan="9" class="empty-msg">Loading...</td></tr></tbody>
         </table>
-        <div id="upstox-sync-msg" style="padding:8px 16px;font-size:12px;color:#64748b;display:none;"></div>
     </div>
 </div>
 
 <script>
-// Add real position (paper_mode = false)
+// Add real position
 function addRealPosition() {
     const symbol = document.getElementById('m-symbol').value.trim().toUpperCase();
     const qty = document.getElementById('m-qty').value;
@@ -256,14 +250,14 @@ function addRealPosition() {
         return;
     }
     
-    msg.textContent = '⏳ Adding real position...';
+    msg.textContent = '⏳ Adding...';
     fetch('/api/auto/manual/add', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({symbol, qty: parseInt(qty), buy_price: parseFloat(buy_price), broker, itype})
     }).then(r => r.json()).then(d => {
         if (d.status === 'added') {
-            msg.textContent = '✅ Real position added! P&L will update live.';
+            msg.textContent = '✅ Added!';
             msg.style.color = '#16a34a';
             document.getElementById('m-symbol').value = '';
             document.getElementById('m-qty').value = '';
@@ -276,61 +270,86 @@ function addRealPosition() {
     });
 }
 
-function upstoxLogin() {
-    fetch('/api/auto/upstox/login').then(r => r.json()).then(d => { window.open(d.login_url, '_blank'); });
-}
-
-function syncAllBrokers() {
-    const msg = document.getElementById('upstox-sync-msg');
-    msg.style.display = 'block';
-    msg.textContent = '⏳ Syncing Upstox...';
-    fetch('/api/auto/upstox/sync', {method:'POST'})
-        .then(r => r.json())
-        .then(d => { 
-            msg.textContent = '✅ Synced at ' + new Date().toLocaleTimeString('en-IN'); 
-            loadRealPositions();
-        })
-        .catch(() => { msg.textContent = '❌ Sync failed'; });
-}
-
+// Load real positions
 function loadRealPositions() {
-    // Load ALL real positions (paper_mode = false)
     fetch('/api/auto/upstox/positions')
         .then(r => r.json())
         .then(d => {
-            const tbody = document.getElementById('upstox-body');
-            // Filter to real positions only
-            const realPositions = d.positions.filter(p => p.paper_mode === false);
+            console.log('API Response:', d);
+            const realPositions = d.positions || [];
+            const count = realPositions.length;
             
-            if (realPositions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">No real positions. Add via form or sync broker.</td></tr>';
-                return;
+            document.getElementById('pos-count').innerHTML = count ? `(${count})` : '';
+            
+            // Update Real Portfolio box (positions-body)
+            const posBody = document.getElementById('positions-body');
+            if (count === 0) {
+                posBody.innerHTML = '<tr><td colspan="7" class="empty-msg">No real positions found. Add via form above.</td></tr>';
+            } else {
+                posBody.innerHTML = realPositions.map(p => {
+                    const pnlClass = p.pnl > 0 ? 'green' : p.pnl < 0 ? 'red' : 'gray';
+                    const isUSD = p.itype === 'US_STOCK';
+                    const buyFmt = isUSD ? '$' + Number(p.buy_price).toLocaleString('en-US') : '₹' + Number(p.buy_price).toLocaleString('en-IN');
+                    const ltpFmt = isUSD ? '$' + Number(p.ltp).toLocaleString('en-US') : '₹' + Number(p.ltp).toLocaleString('en-IN');
+                    const pnlFmt = (p.pnl >= 0 ? '+' : '') + (isUSD ? '$' : '₹') + Math.abs(p.pnl).toLocaleString('en-IN');
+                    return `<tr>
+                        <td style="font-weight:600">${p.symbol}</td>
+                        <td>${p.qty}</td>
+                        <td>${buyFmt}</td>
+                        <td>${ltpFmt}</td>
+                        <td class="${pnlClass}">${pnlFmt}</td>
+                        <td><span class="badge" style="background:#e0e7ff;color:#3730a3;">${p.broker || p.source || 'Unknown'}</span></td>
+                        <td><button onclick="removeRealPosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:4px;">✕</button></td>
+                    </tr>`;
+                }).join('');
             }
             
-            tbody.innerHTML = realPositions.map(p => {
-                const pnlClass = p.pnl > 0 ? 'green' : p.pnl < 0 ? 'red' : 'gray';
-                const buyFmt = p.itype === 'US_STOCK' ? '$' + Number(p.buy_price).toLocaleString('en-US') : '₹' + Number(p.buy_price).toLocaleString('en-IN');
-                const ltpFmt = p.itype === 'US_STOCK' ? '$' + Number(p.ltp).toLocaleString('en-US') : '₹' + Number(p.ltp).toLocaleString('en-IN');
-                const pnlFmt = (p.pnl >= 0 ? '+' : '') + (p.itype === 'US_STOCK' ? '$' : '₹') + Math.abs(p.pnl).toLocaleString('en-IN');
-                return `<tr>
-                    <td style="font-weight:600">${p.symbol}</td>
-                    <td><span class="badge" style="background:#eff6ff;color:#2563eb">${p.itype}</span></td>
-                    <td>${p.qty}</td>
-                    <td>${buyFmt}</td>
-                    <td>${ltpFmt}</td>
-                    <td class="${pnlClass}">${pnlFmt}</td>
-                    <td><span class="badge" style="background:#e0e7ff;color:#3730a3">${p.broker || p.source || 'Unknown'}</span></td>
-                    <td style="font-size:11px;color:#94a3b8">${p.synced_at ? new Date(p.synced_at).toLocaleDateString() : '—'}</td>
-                    <td><button onclick="removeRealPosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">✕</button></td>
-                </tr>`;
-            }).join('');
+            // Update Upstox table (upstox-body)
+            const upstoxBody = document.getElementById('upstox-body');
+            if (count === 0) {
+                upstoxBody.innerHTML = '<tr><td colspan="9" class="empty-msg">No real positions. Add via form above.</td></tr>';
+            } else {
+                upstoxBody.innerHTML = realPositions.map(p => {
+                    const pnlClass = p.pnl > 0 ? 'green' : p.pnl < 0 ? 'red' : 'gray';
+                    const isUSD = p.itype === 'US_STOCK';
+                    const buyFmt = isUSD ? '$' + Number(p.buy_price).toLocaleString('en-US') : '₹' + Number(p.buy_price).toLocaleString('en-IN');
+                    const ltpFmt = isUSD ? '$' + Number(p.ltp).toLocaleString('en-US') : '₹' + Number(p.ltp).toLocaleString('en-IN');
+                    const pnlFmt = (p.pnl >= 0 ? '+' : '') + (isUSD ? '$' : '₹') + Math.abs(p.pnl).toLocaleString('en-IN');
+                    return `<tr>
+                        <td style="font-weight:600">${p.symbol}</td>
+                        <td><span class="badge" style="background:#eff6ff;">${p.itype}</span></td>
+                        <td>${p.qty}</td>
+                        <td>${buyFmt}</td>
+                        <td>${ltpFmt}</td>
+                        <td class="${pnlClass}">${pnlFmt}</td>
+                        <td><span class="badge" style="background:#e0e7ff;">${p.broker || p.source}</span></td>
+                        <td style="font-size:11px;color:#94a3b8">${p.synced_at ? new Date(p.synced_at).toLocaleDateString() : '—'}</td>
+                        <td><button onclick="removeRealPosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;">✕</button></td>
+                    </tr>`;
+                }).join('');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            document.getElementById('positions-body').innerHTML = '<tr><td colspan="7" class="empty-msg">Error loading positions</td></tr>';
+            document.getElementById('upstox-body').innerHTML = '<tr><td colspan="9" class="empty-msg">Error loading positions</td></tr>';
         });
 }
 
 function removeRealPosition(symbol) {
     if (!confirm('Remove ' + symbol + ' from real portfolio?')) return;
-    fetch('/api/position/remove', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:symbol})})
-        .then(r => r.json()).then(d => { if(d.status==='ok'){alert(symbol+' removed');loadRealPositions();} else{alert('Error');} });
+    fetch('/api/position/remove', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({symbol: symbol})
+    }).then(r => r.json()).then(d => {
+        if (d.status === 'ok') {
+            alert(symbol + ' removed');
+            loadRealPositions();
+        } else {
+            alert('Error: ' + (d.error || 'Unknown'));
+        }
+    });
 }
 
 // Load on page open
@@ -341,7 +360,9 @@ var socket = io();
 function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2}); }
 function colorVal(el, val) { el.className = 'value ' + (val > 0 ? 'green' : val < 0 ? 'red' : 'gray'); }
 
-setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN'); }, 1000);
+setInterval(() => {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN');
+}, 1000);
 
 socket.on('state_update', (d) => {
     document.getElementById('capital').textContent = fmt(d.capital || 0);
@@ -354,7 +375,7 @@ socket.on('state_update', (d) => {
     document.getElementById('wins_losses').textContent = (d.wins||0) + ' / ' + (d.losses||0);
     document.getElementById('win-bar').style.width = Math.min(d.win_rate||0, 100) + '%';
     
-    // Watchlist
+    // Watchlist - keep this separate
     const wl = d.watchlist || {};
     document.getElementById('wl-count').textContent = Object.keys(wl).length + ' stocks';
     let whtml = '';
@@ -362,9 +383,14 @@ socket.on('state_update', (d) => {
         const rsiColor = v.rsi < 30 ? '#16a34a' : v.rsi > 70 ? '#dc2626' : '#64748b';
         const rsiPct = Math.min(v.rsi, 100);
         const bClass = v.signal === 'BUY' ? 'badge-buy' : v.signal === 'SELL' ? 'badge-sell' : 'badge-hold';
-        const isUsd = sym.includes('-USD') || sym.includes('/USD');
-        const priceStr = v.price ? (isUsd ? '$' + Number(v.price).toLocaleString('en-US', {maximumFractionDigits:2}) : fmt(v.price)) : '—';
-        whtml += `<tr><td style="font-weight:500;">${sym.replace('.NS','')}</td><td>${priceStr}</td><td><span style="color:${rsiColor};font-weight:600;">${Number(v.rsi).toFixed(1)}</span><div class="rsi-bar-wrap"><div class="rsi-bar" style="width:${rsiPct}%;background:${rsiColor};"></div></div></td><td><span class="badge ${bClass}">${v.signal}</span></td></tr>`;
+        const isUsd = sym.includes('-USD');
+        const priceStr = v.price ? (isUsd ? '$' + Number(v.price).toLocaleString('en-US') : fmt(v.price)) : '—';
+        whtml += `<tr>
+            <td style="font-weight:500;">${sym.replace('.NS','').replace('=X','')}</td>
+            <td>${priceStr}</td>
+            <td><span style="color:${rsiColor};font-weight:600;">${Number(v.rsi).toFixed(1)}</span><div class="rsi-bar-wrap"><div class="rsi-bar" style="width:${rsiPct}%;background:${rsiColor};"></div></div></td>
+            <td><span class="badge ${bClass}">${v.signal}</span></td>
+        </tr>`;
     }
     document.getElementById('watchlist-body').innerHTML = whtml || '<tr><td colspan="4" class="empty-msg">Waiting for scan...</td></tr>';
     
@@ -374,7 +400,17 @@ socket.on('state_update', (d) => {
     trades.forEach(t => {
         const pnlStr = t.pnl != null ? `<span style="color:${t.pnl>=0?'#16a34a':'#dc2626'};">${fmt(t.pnl)}</span>` : '—';
         const bClass = t.action === 'BUY' ? 'badge-buy' : 'badge-sell';
-        thtml += `<tr><td style="color:#94a3b8;">${t.date || ''}</td><td style="color:#94a3b8;">${t.time || ''}</td><td>${String(t.symbol||'').replace('.NS','')}</td><td><span class="badge ${bClass}">${(t.action||'').toUpperCase()}</span></td><td>${fmt(t.price || t.buy_price || 0)}</td><td>${t.qty || 0}</td><td>${Number(t.rsi||0).toFixed(1)}</td><td>${pnlStr}</td><td style="color:#94a3b8;">${t.reason || ''}</td></tr>`;
+        thtml += `<tr>
+            <td style="color:#94a3b8;font-size:12px;">${t.date || ''}</td>
+            <td style="color:#94a3b8;font-size:12px;">${t.time || ''}</td>
+            <td style="font-weight:500;">${String(t.symbol||'').replace('.NS','')}</td>
+            <td><span class="badge ${bClass}">${(t.action||'').toUpperCase()}</span></td>
+            <td>${fmt(t.price || t.buy_price || 0)}</td>
+            <td>${t.qty || 0}</td>
+            <td style="color:#64748b;">${Number(t.rsi||0).toFixed(1)}</td>
+            <td>${pnlStr}</td>
+            <td style="color:#94a3b8;font-size:12px;">${t.reason || ''}</td>
+        </tr>`;
     });
     document.getElementById('trade-log').innerHTML = thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
 });
@@ -385,8 +421,7 @@ socket.on('state_update', (d) => {
 
 @app.route("/api/positions")
 def api_positions():
-    from dashboard import bot_state as s
-    raw = s.get("positions", {})
+    raw = bot_state.get("positions", {})
     pos_list = []
     if isinstance(raw, dict):
         for sym, p in raw.items():
