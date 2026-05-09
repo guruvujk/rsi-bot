@@ -66,6 +66,29 @@ def api_position_update():
 def api_health():
     return jsonify({"status": "running", "paper_mode": True}), 200
 
+@app.route('/api/position/remove', methods=['POST'])
+def remove_position():
+    try:
+        data = request.get_json(silent=True) or {}
+        symbol = data.get("symbol", "")
+        if not symbol:
+            return jsonify({"error": "No symbol provided"}), 400
+        
+        # Remove from bot_state
+        if symbol in bot_state.get("positions", {}):
+            del bot_state["positions"][symbol]
+        
+        # Remove from DB
+        try:
+            from db_state import save_state as db_save
+            db_save(dict(bot_state))
+        except Exception as e:
+            print(f"[Remove] DB error: {e}")
+        
+        return jsonify({"status": "ok", "removed": symbol})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ── Main dashboard page ───────────────────────────────────────────────────────
 DASHBOARD_HTML = """
 <!DOCTYPE html>
@@ -249,7 +272,7 @@ function removeManualPosition(symbol, broker) {
       <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span>
     </div>
     <table>
-      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th><th>Broker</th><th></th></tr></thead>
+      <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th><th></th></tr></thead></th></tr></thead>
       <tbody id="positions-body">
         <tr><td colspan="5" class="empty-msg">No open positions</td></tr>
       </tbody>
@@ -514,6 +537,20 @@ setInterval(loadUpstoxPositions, 30000);
         }
         document.getElementById('positions-body').innerHTML =
           phtml || '<tr><td colspan="5" class="empty-msg">No open positions</td></tr>';
+          phtml += `<tr>
+    <td>${sym}</td><td>${p.qty}</td>
+    <td>${fmtP(p.buy_price, isUSD)}</td>
+    <td>${fmtP(p.ltp, isUSD)}</td>
+    <td style="color:${upnlColor};font-weight:600;">${fmtP(p.pnl, false)}</td>
+    <td>${tslBadge}</td>
+    <td>
+      <button onclick="removePosition('${sym}')" 
+        style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;
+               padding:3px 10px;font-size:11px;cursor:pointer;font-weight:600;">
+        ✕
+      </button>
+    </td>
+  </tr>`;
       }).catch(() => {});
       
       // Trade Log
@@ -540,6 +577,32 @@ setInterval(loadUpstoxPositions, 30000);
     document.getElementById('trade-log').innerHTML =
       thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
   });
+// ... existing trade log code above ...
+    document.getElementById('trade-log').innerHTML =
+      thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
+  });  // ← this closes socket.on('state_update')
+
+  // ← ADD removePosition HERE, after socket.on closes
+  function removePosition(symbol) {
+    if (!confirm('Remove ' + symbol + ' from positions?')) return;
+    fetch('/api/position/remove', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({symbol: symbol})
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.status === 'ok') {
+            alert(symbol + ' removed successfully');
+        } else {
+            alert('Error: ' + (d.error || 'Unknown'));
+        }
+    });
+  }
+
+</script>   // ← closing script tag
+</body>
+</html>
 </script>
 </body>
 </html>
