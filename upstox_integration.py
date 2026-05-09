@@ -18,25 +18,7 @@ def get_login_url():
         f"&redirect_uri={UPSTOX_REDIRECT}"
     )
 
-def get_access_token(auth_code: str) -> str:
-    url = "https://api.upstox.com/v2/login/authorization/token"
-    data = {
-        "code":          auth_code,
-        "client_id":     UPSTOX_API_KEY,
-        "client_secret": UPSTOX_API_SECRET,
-        "redirect_uri":  UPSTOX_REDIRECT,
-        "grant_type":    "authorization_code",
-    }
-    r = requests.post(url, data=data)
-    if r.status_code == 200:
-        token = r.json().get("access_token")
-        os.makedirs("logs", exist_ok=True)
-        with open(UPSTOX_TOKEN_FILE, "w") as f:
-            json.dump({"access_token": token}, f)
-        print(f"Upstox token saved")
-        return token
-    else:
-        print(f"Token error: {r.text}")
+
 def get_access_token(auth_code: str) -> str:
     url = "https://api.upstox.com/v2/login/authorization/token"
     data = {
@@ -62,7 +44,7 @@ def get_access_token(auth_code: str) -> str:
     else:
         print(f"Token error: {r.text}")
         return None
-        return None
+        
 
 def load_token() -> str:
     try:
@@ -95,23 +77,7 @@ def get_holdings(token: str) -> list:
     print(f"Holdings error: {r.text}")
     return []
 
-def sync_to_bot(token: str):
-    from db_state import load_state, save_state
-    positions = get_positions(token)
-    holdings  = get_holdings(token)
-    all_pos   = positions + holdings
-    if not all_pos:
-        print("No positions found in Upstox")
-        return
-    state = load_state() or {}
-    bot_positions = state.get("positions", {})
-    for p in all_pos:
-        symbol    = p.get("tradingsymbol", "") + ".NS"
-        qty       = p.get("quantity", 0)
-        avg_price = p.get("average_price", 0)
-        ltp       = p.get("last_price", avg_price)
-        if qty <= 0:
-            continue
+
         
 def sync_to_bot(token: str):
     from db_state import load_state, save_state
