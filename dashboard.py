@@ -176,23 +176,17 @@ DASHBOARD_HTML = """
         </table>
     </div>
 
-    <!-- Open Positions Box - FIXED HEADER -->
+    <!-- Open Positions Box - REAL POSITIONS ONLY -->
     <div class="box">
-        <div class="box-title">Open Positions <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span></div>
+        <div class="box-title">Real Portfolio — Live Positions <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span></div>
         <table>
             <thead>
                 <tr>
-                    <th>Symbol</th>
-                    <th>Qty</th>
-                    <th>Buy @</th>
-                    <th>LTP</th>
-                    <th>P&L</th>
-                    <th>TSL</th>
-                    <th></th>
+                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Broker</th><th></th>
                 </tr>
             </thead>
             <tbody id="positions-body">
-                <tr><td colspan="7" class="empty-msg">No open positions</td></tr>
+                <tr><td colspan="7" class="empty-msg">No real positions found. Connect broker (Kite/Groww/Upstox)</td></tr>
             </tbody>
         </table>
     </div>
@@ -203,75 +197,78 @@ DASHBOARD_HTML = """
     <div class="box">
         <div class="box-title">Trade Log (Last 20)</div>
         <table>
-            <thead>
-                <tr><th>Date</th><th>Time</th><th>Symbol</th><th>Action</th><th>Price</th><th>Qty</th><th>RSI</th><th>P&L</th><th>Reason</th></tr>
-            </thead>
+            <thead><tr><th>Date</th><th>Time</th><th>Symbol</th><th>Action</th><th>Price</th><th>Qty</th><th>RSI</th><th>P&L</th><th>Reason</th></tr></thead>
             <tbody id="trade-log"><tr><td colspan="9" class="empty-msg">No trades yet</td></tr></tbody>
         </table>
     </div>
 </div>
 
-<!-- Add Manual Position -->
+<!-- Add Manual Position (Real Broker Only) -->
 <div class="grid1">
     <div class="box">
         <div class="box-title" style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;">
-            <span style="color:#16a34a;">➕ Add Manual Position</span>
+            <span style="color:#16a34a;">➕ Add Real Position (Kite / Groww / Upstox / Zerodha)</span>
         </div>
         <div style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
             <div><label style="font-size:11px;">Symbol</label><input id="m-symbol" placeholder="SUNPHARMA.NS" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:120px;"></div>
             <div><label style="font-size:11px;">Qty</label><input id="m-qty" type="number" placeholder="2" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:80px;"></div>
             <div><label style="font-size:11px;">Buy Price</label><input id="m-price" type="number" placeholder="1852.30" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:100px;"></div>
-            <div><label style="font-size:11px;">Broker</label><select id="m-broker" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option>Kite</option><option>Groww</option><option>Upstox</option><option>Manual</option></select></div>
-            <div><label style="font-size:11px;">Type</label><select id="m-itype" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option value="STOCK">STOCK</option><option value="US_STOCK">US_STOCK</option><option value="CRYPTO">CRYPTO</option><option value="COMMODITY">COMMODITY</option></select></div>
-            <button onclick="addManualPosition()" style="padding:7px 18px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-weight:600;">➕ Add</button>
+            <div><label style="font-size:11px;">Broker</label><select id="m-broker" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option>Kite</option><option>Groww</option><option>Upstox</option><option>Zerodha</option></select></div>
+            <div><label style="font-size:11px;">Type</label><select id="m-itype" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option value="STOCK">STOCK</option><option value="US_STOCK">US_STOCK</option></select></div>
+            <button onclick="addRealPosition()" style="padding:7px 18px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-weight:600;">➕ Add Real Position</button>
             <span id="m-msg" style="font-size:12px;color:#64748b;"></span>
         </div>
     </div>
 </div>
 
-<!-- Upstox Portfolio -->
+<!-- Upstox Real Portfolio Section -->
 <div class="grid1">
     <div class="box">
         <div class="box-title" style="background:#eff6ff;border-bottom:1px solid #bfdbfe;">
-            <span style="color:#2563eb;">🔗 Upstox — Real Portfolio</span>
-            <div><span id="upstox-token-status" style="font-size:11px;padding:2px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;">Token OK</span>
-            <button onclick="upstoxLogin()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid #bfdbfe;background:#fff;color:#2563eb;">🔑 Login</button>
-            <button onclick="upstoxSync()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#2563eb;color:#fff;">🔄 Sync</button></div>
+            <span style="color:#2563eb;">🔗 All Real Portfolios (Kite / Groww / Upstox / Zerodha)</span>
+            <div>
+                <span id="upstox-token-status" style="font-size:11px;padding:2px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;">Ready</span>
+                <button onclick="upstoxLogin()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid #bfdbfe;background:#fff;color:#2563eb;">🔑 Upstox Login</button>
+                <button onclick="syncAllBrokers()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#2563eb;color:#fff;">🔄 Sync All</button>
+            </div>
         </div>
         <table>
-            <thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>SL Price</th><th>TSL</th><th>Synced</th><th></th></tr></thead>
-            <tbody id="upstox-body"><tr><td colspan="10" class="empty-msg">Click Sync to load positions</td></tr></tbody>
+            <thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Broker</th><th>Synced</th><th></th></tr></thead>
+            <tbody id="upstox-body"><tr><td colspan="9" class="empty-msg">No real positions. Add via form above or sync broker.</td></tr></tbody>
         </table>
         <div id="upstox-sync-msg" style="padding:8px 16px;font-size:12px;color:#64748b;display:none;"></div>
     </div>
 </div>
 
 <script>
-function addManualPosition() {
+// Add real position (paper_mode = false)
+function addRealPosition() {
     const symbol = document.getElementById('m-symbol').value.trim().toUpperCase();
     const qty = document.getElementById('m-qty').value;
     const buy_price = document.getElementById('m-price').value;
     const broker = document.getElementById('m-broker').value;
     const itype = document.getElementById('m-itype').value;
     const msg = document.getElementById('m-msg');
+    
     if (!symbol || !qty || !buy_price) {
         msg.textContent = '❌ Fill all fields';
         msg.style.color = '#dc2626';
         return;
     }
-    msg.textContent = '⏳ Adding...';
+    
+    msg.textContent = '⏳ Adding real position...';
     fetch('/api/auto/manual/add', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({symbol, qty: parseInt(qty), buy_price: parseFloat(buy_price), broker, itype})
     }).then(r => r.json()).then(d => {
         if (d.status === 'added') {
-            msg.textContent = '✅ Added — SL: ₹' + d.sl_price;
+            msg.textContent = '✅ Real position added! P&L will update live.';
             msg.style.color = '#16a34a';
             document.getElementById('m-symbol').value = '';
             document.getElementById('m-qty').value = '';
             document.getElementById('m-price').value = '';
-            loadUpstoxPositions();
+            loadRealPositions();
         } else {
             msg.textContent = '❌ ' + (d.error || 'Failed');
             msg.style.color = '#dc2626';
@@ -283,44 +280,62 @@ function upstoxLogin() {
     fetch('/api/auto/upstox/login').then(r => r.json()).then(d => { window.open(d.login_url, '_blank'); });
 }
 
-function upstoxSync() {
+function syncAllBrokers() {
     const msg = document.getElementById('upstox-sync-msg');
     msg.style.display = 'block';
-    msg.textContent = '⏳ Syncing...';
+    msg.textContent = '⏳ Syncing Upstox...';
     fetch('/api/auto/upstox/sync', {method:'POST'})
         .then(r => r.json())
-        .then(d => { msg.textContent = '✅ Synced at ' + new Date().toLocaleTimeString('en-IN'); loadUpstoxPositions(); })
+        .then(d => { 
+            msg.textContent = '✅ Synced at ' + new Date().toLocaleTimeString('en-IN'); 
+            loadRealPositions();
+        })
         .catch(() => { msg.textContent = '❌ Sync failed'; });
 }
 
-function loadUpstoxPositions() {
-    fetch('/api/auto/upstox/token').then(r => r.json()).then(t => {
-        const el = document.getElementById('upstox-token-status');
-        if (t.is_valid) { el.textContent = '✅ Token valid till ' + t.expires_at; el.style.background = '#dcfce7'; el.style.color = '#16a34a'; }
-        else { el.textContent = '❌ Token expired — Login'; el.style.background = '#fee2e2'; el.style.color = '#dc2626'; }
-    });
-    fetch('/api/auto/upstox/positions').then(r => r.json()).then(d => {
-        const tbody = document.getElementById('upstox-body');
-        if (!d.positions || d.positions.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="empty-msg">No positions in DB</td></tr>'; return; }
-        tbody.innerHTML = d.positions.map(p => {
-            const pnlClass = p.pnl > 0 ? 'green' : p.pnl < 0 ? 'red' : 'gray';
-            const buyFmt = p.itype === 'US_STOCK' ? '$' + p.buy_price : '₹' + Number(p.buy_price).toLocaleString('en-IN');
-            const ltpFmt = p.itype === 'US_STOCK' ? '$' + p.ltp : '₹' + Number(p.ltp).toLocaleString('en-IN');
-            const slFmt = p.sl_price > 0 ? (p.itype==='US_STOCK'?'$':'₹') + Number(p.sl_price).toLocaleString('en-IN') : '—';
-            const pnlFmt = (p.pnl >= 0 ? '+' : '') + (p.itype === 'US_STOCK' ? '$' : '₹') + Math.abs(p.pnl).toLocaleString('en-IN');
-            return `<tr><td>${p.symbol}</td><td><span class="badge" style="background:#eff6ff;color:#2563eb">${p.itype}</span></td><td>${p.qty}</td><td>${buyFmt}</td><td>${ltpFmt}</td><td class="${pnlClass}">${pnlFmt}</td><td>${slFmt}</td><td>${p.tsl_active ? '<span class="badge badge-buy">ON</span>' : '<span class="badge badge-hold">OFF</span>'}</td><td>${p.synced_at || '—'}</td><td><button onclick="removePosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">✕</button></td></tr>`;
-        }).join('');
-    });
+function loadRealPositions() {
+    // Load ALL real positions (paper_mode = false)
+    fetch('/api/auto/upstox/positions')
+        .then(r => r.json())
+        .then(d => {
+            const tbody = document.getElementById('upstox-body');
+            // Filter to real positions only
+            const realPositions = d.positions.filter(p => p.paper_mode === false);
+            
+            if (realPositions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">No real positions. Add via form or sync broker.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = realPositions.map(p => {
+                const pnlClass = p.pnl > 0 ? 'green' : p.pnl < 0 ? 'red' : 'gray';
+                const buyFmt = p.itype === 'US_STOCK' ? '$' + Number(p.buy_price).toLocaleString('en-US') : '₹' + Number(p.buy_price).toLocaleString('en-IN');
+                const ltpFmt = p.itype === 'US_STOCK' ? '$' + Number(p.ltp).toLocaleString('en-US') : '₹' + Number(p.ltp).toLocaleString('en-IN');
+                const pnlFmt = (p.pnl >= 0 ? '+' : '') + (p.itype === 'US_STOCK' ? '$' : '₹') + Math.abs(p.pnl).toLocaleString('en-IN');
+                return `<tr>
+                    <td style="font-weight:600">${p.symbol}</td>
+                    <td><span class="badge" style="background:#eff6ff;color:#2563eb">${p.itype}</span></td>
+                    <td>${p.qty}</td>
+                    <td>${buyFmt}</td>
+                    <td>${ltpFmt}</td>
+                    <td class="${pnlClass}">${pnlFmt}</td>
+                    <td><span class="badge" style="background:#e0e7ff;color:#3730a3">${p.broker || p.source || 'Unknown'}</span></td>
+                    <td style="font-size:11px;color:#94a3b8">${p.synced_at ? new Date(p.synced_at).toLocaleDateString() : '—'}</td>
+                    <td><button onclick="removeRealPosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">✕</button></td>
+                </tr>`;
+            }).join('');
+        });
 }
 
-function removePosition(symbol) {
-    if (!confirm('Remove ' + symbol + ' from positions?')) return;
+function removeRealPosition(symbol) {
+    if (!confirm('Remove ' + symbol + ' from real portfolio?')) return;
     fetch('/api/position/remove', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:symbol})})
-        .then(r => r.json()).then(d => { if(d.status==='ok'){alert(symbol+' removed');loadUpstoxPositions();} else{alert('Error');} });
+        .then(r => r.json()).then(d => { if(d.status==='ok'){alert(symbol+' removed');loadRealPositions();} else{alert('Error');} });
 }
 
-loadUpstoxPositions();
-setInterval(loadUpstoxPositions, 30000);
+// Load on page open
+loadRealPositions();
+setInterval(loadRealPositions, 30000);
 
 var socket = io();
 function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2}); }
@@ -349,24 +364,9 @@ socket.on('state_update', (d) => {
         const bClass = v.signal === 'BUY' ? 'badge-buy' : v.signal === 'SELL' ? 'badge-sell' : 'badge-hold';
         const isUsd = sym.includes('-USD') || sym.includes('/USD');
         const priceStr = v.price ? (isUsd ? '$' + Number(v.price).toLocaleString('en-US', {maximumFractionDigits:2}) : fmt(v.price)) : '—';
-        whtml += `<tr><td>${sym.replace('.NS','')}</td><td>${priceStr}</td><td><span style="color:${rsiColor};font-weight:600;">${Number(v.rsi).toFixed(1)}</span><div class="rsi-bar-wrap"><div class="rsi-bar" style="width:${rsiPct}%;background:${rsiColor};"></div></div></td><td><span class="badge ${bClass}">${v.signal}</span></td></tr>`;
+        whtml += `<tr><td style="font-weight:500;">${sym.replace('.NS','')}</td><td>${priceStr}</td><td><span style="color:${rsiColor};font-weight:600;">${Number(v.rsi).toFixed(1)}</span><div class="rsi-bar-wrap"><div class="rsi-bar" style="width:${rsiPct}%;background:${rsiColor};"></div></div></td><td><span class="badge ${bClass}">${v.signal}</span></td></tr>`;
     }
     document.getElementById('watchlist-body').innerHTML = whtml || '<tr><td colspan="4" class="empty-msg">Waiting for scan...</td></tr>';
-    
-    // Open Positions
-    fetch('/api/auto/portfolio').then(r => r.json()).then(port => {
-        const rows = port.positions || [];
-        document.getElementById('pos-count').textContent = rows.length ? rows.length + ' open' : '';
-        let phtml = '';
-        for (const p of rows) {
-            const isUSD = p.itype === 'US_STOCK';
-            const fmtP = (v) => isUSD ? '$'+Number(v).toLocaleString('en-US',{maximumFractionDigits:2}) : '₹'+Number(v).toLocaleString('en-IN',{maximumFractionDigits:2});
-            const upnlColor = p.pnl >= 0 ? '#16a34a' : '#dc2626';
-            const tslBadge = p.tsl_active ? '<span class="badge badge-buy">ON</span>' : '<span class="badge badge-hold">OFF</span>';
-            phtml += `<tr><td>${p.symbol}</td><td>${p.qty}</td><td>${fmtP(p.buy_price)}</td><td>${fmtP(p.ltp)}</td><td style="color:${upnlColor};font-weight:600;">${fmtP(p.pnl)}</td><td>${tslBadge}</td><td><button onclick="removePosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">✕</button></td></tr>`;
-        }
-        document.getElementById('positions-body').innerHTML = phtml || '<tr><td colspan="7" class="empty-msg">No open positions</td></tr>';
-    }).catch(() => {});
     
     // Trade Log
     const trades = [...(d.trades || [])].reverse().slice(0, 20);
@@ -374,7 +374,7 @@ socket.on('state_update', (d) => {
     trades.forEach(t => {
         const pnlStr = t.pnl != null ? `<span style="color:${t.pnl>=0?'#16a34a':'#dc2626'};">${fmt(t.pnl)}</span>` : '—';
         const bClass = t.action === 'BUY' ? 'badge-buy' : 'badge-sell';
-        thtml += `<tr><td>${t.date || ''}</td><td>${t.time || ''}</td><td>${String(t.symbol||'').replace('.NS','')}</td><td><span class="badge ${bClass}">${(t.action||'').toUpperCase()}</span></td><td>${fmt(t.price || t.buy_price || 0)}</td><td>${t.qty || 0}</td><td>${Number(t.rsi||0).toFixed(1)}</td><td>${pnlStr}</td><td>${t.reason || ''}</td></tr>`;
+        thtml += `<tr><td style="color:#94a3b8;">${t.date || ''}</td><td style="color:#94a3b8;">${t.time || ''}</td><td>${String(t.symbol||'').replace('.NS','')}</td><td><span class="badge ${bClass}">${(t.action||'').toUpperCase()}</span></td><td>${fmt(t.price || t.buy_price || 0)}</td><td>${t.qty || 0}</td><td>${Number(t.rsi||0).toFixed(1)}</td><td>${pnlStr}</td><td style="color:#94a3b8;">${t.reason || ''}</td></tr>`;
     });
     document.getElementById('trade-log').innerHTML = thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
 });
