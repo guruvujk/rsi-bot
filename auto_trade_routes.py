@@ -346,7 +346,7 @@ def manual_add_position():
         from db_state import load_state, save_state
         state     = load_state() or {}
         positions = state.get("positions", {})
-        positions[symbol + "_" + broker] = {
+        positions[symbol] = {
             "symbol"    : symbol,
             "qty"       : qty,
             "buy_price" : buy_price,
