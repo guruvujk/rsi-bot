@@ -81,6 +81,23 @@ IST = pytz.timezone("Asia/Kolkata")
 # ─────────────────────────────────────────────────────────────────────────────
 # FILE HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+
+def clean_symbol(symbol):
+    """
+    Remove broker suffix from symbol.
+    Example: 'SUNPHARMA.NS_GROWW' -> 'SUNPHARMA.NS'
+             'AAPL_US_STOCK' -> 'AAPL'
+    """
+    if not symbol:
+        return symbol
+    # Remove broker suffix (anything after _)
+    if '_' in symbol:
+        symbol = symbol.split('_')[0]
+    # Remove .NS if it's a US stock
+    if '.NS' in symbol and symbol.replace('.NS', '').isalpha():
+        # Keep .NS for NSE stocks, but remove for US stocks
+        pass
+    return symbol
 def _load_json(path: str, default):
     try:
         with open(path, 'r') as f:
