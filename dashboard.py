@@ -273,9 +273,6 @@ function removeManualPosition(symbol, broker) {
     </div>
     <table>
       <thead><tr><th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>TSL</th><th></th></tr></thead>
-      <th>Symbol</th><th>Type</th><th>Qty</th>
-      <th>Buy @</th><th>LTP</th><th>P&L</th>
-      <th>SL Price</th><th>TSL</th><th>Synced</th><th></th>
       <tbody id="positions-body">
         <tr><td colspan="5" class="empty-msg">No open positions</td></tr>
       </tbody>
