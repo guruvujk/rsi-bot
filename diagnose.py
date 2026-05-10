@@ -6,7 +6,7 @@ print(f"Open positions: {list(positions.keys())}\n")
 
 for sym, pos in positions.items():
     try:
-        df = yf.download(sym, period="90d", interval="1d", progress=False, auto_adjust=True)
+        df = yf.download(pos.get("symbol", sym.split("_")[0]), period="90d", interval="1d", progress=False, auto_adjust
         df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
         price = float(df["Close"].squeeze().iloc[-1])
         rsi_series = calc_rsi(df["Close"].squeeze())

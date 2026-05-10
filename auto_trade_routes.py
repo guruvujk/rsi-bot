@@ -22,6 +22,11 @@ import yfinance as yf
 
 auto_trade_bp = Blueprint("auto_trade", __name__, url_prefix="/api/auto")
 
+# Real brokers list
+REAL_BROKERS = ['kite', 'groww', 'upstox', 'zerodha', 'angel', 'angelone', 
+                'icici', 'hdfc', 'axis', 'kotak', 'motilal', '5paisa', 
+                'sharekhan', 'stoxkart', 'coin', 'dhan']
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SCHEDULER CONTROL
@@ -64,12 +69,38 @@ def manual_scan():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PORTFOLIO
+# PORTFOLIO - ALL POSITIONS (including paper trades)
 # ─────────────────────────────────────────────────────────────────────────────
 @auto_trade_bp.route("/portfolio", methods=["GET"])
 def portfolio():
-    """Get all open positions with live P&L."""
+    """Get ALL open positions with live P&L (includes paper trades)."""
     return jsonify(get_portfolio_summary())
+
+
+@auto_trade_bp.route("/portfolio/real", methods=["GET"])
+def real_portfolio():
+    """Get ONLY real broker positions (excludes paper trades)."""
+    summary = get_portfolio_summary()
+    positions = summary.get("positions", [])
+    
+    # Filter out paper trades
+    real_positions = []
+    for pos in positions:
+        broker = pos.get("source", pos.get("broker", "")).lower()
+        is_paper = pos.get("paper_mode", False) or broker in ['paper', 'manual']
+        # Also check if it's from manual add without broker
+        if not is_paper and broker not in ['paper', 'manual', '']:
+            real_positions.append(pos)
+    
+    # Calculate real portfolio value
+    real_pnl = sum(p.get("pnl", 0) for p in real_positions)
+    
+    return jsonify({
+        "positions": real_positions,
+        "count": len(real_positions),
+        "total_pnl": round(real_pnl, 2),
+        "message": f"Showing {len(real_positions)} real broker positions (paper trades hidden)"
+    })
 
 
 @auto_trade_bp.route("/close/<symbol>", methods=["POST"])
@@ -248,6 +279,8 @@ def get_gainers():
 @auto_trade_bp.route("/watchlist", methods=["GET"])
 def get_watchlist():
     return jsonify({"watchlist": WATCHLIST, "count": len(WATCHLIST)})
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG — view and hot-update engine settings
 # ─────────────────────────────────────────────────────────────────────────────
@@ -266,6 +299,7 @@ def get_config():
         "BROKERAGE_PCT"        : eng.BROKERAGE_PCT,
     })
 
+
 @auto_trade_bp.route("/config", methods=["POST"])
 def set_config():
     import auto_trade_engine as eng
@@ -279,11 +313,16 @@ def set_config():
             setattr(eng, key, type(getattr(eng, key))(data[key]))
             updated[key] = getattr(eng, key)
     return jsonify({"status": "updated", "updated": updated})
-# UPSTOX
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UPSTOX / REAL BROKER INTEGRATION
+# ─────────────────────────────────────────────────────────────────────────────
 @auto_trade_bp.route("/upstox/login", methods=["GET"])
 def upstox_login():
     from upstox_integration import get_login_url
     return jsonify({"login_url": get_login_url()})
+
 
 @auto_trade_bp.route("/upstox/sync", methods=["POST"])
 def upstox_sync():
@@ -294,59 +333,112 @@ def upstox_sync():
     sync_to_bot(token)
     return jsonify({"status": "synced", "db_saved": True})
 
+
 @auto_trade_bp.route("/upstox/token", methods=["GET"])
 def upstox_token_status():
     from upstox_db import get_token_status
     return jsonify(get_token_status())
 
+
 @auto_trade_bp.route("/upstox/positions", methods=["GET"])
 def upstox_positions_from_db():
+    """
+    Get positions from Upstox/Kite/Groww real portfolio.
+    Excludes paper trades and manual entries without broker.
+    """
     from upstox_db import load_positions
-    positions = load_positions()
-    return jsonify({"source": "neon_db", "count": len(positions), "positions": positions})
+    all_positions = load_positions()
+    
+    # Filter to ONLY real broker positions
+    real_positions = []
+    for pos in all_positions:
+        source = pos.get('source', '').lower()
+        broker = pos.get('broker', '').lower()
+        is_paper = pos.get('paper_mode', False)
+        
+        # Check if this is a real broker position
+        is_real_broker = (source in REAL_BROKERS or broker in REAL_BROKERS)
+        is_not_paper = not is_paper and source not in ['paper', 'manual'] and broker not in ['paper', 'manual']
+        
+        if is_real_broker and is_not_paper:
+            real_positions.append(pos)
+    
+    return jsonify({
+        "source": "neon_db",
+        "total_in_db": len(all_positions),
+        "count": len(real_positions),
+        "positions": real_positions,
+        "message": f"Showing {len(real_positions)} real portfolio positions (paper trades hidden)"
+    })
+
 
 @auto_trade_bp.route("/upstox/history", methods=["GET"])
 def upstox_position_history():
     from upstox_db import get_position_history
     history = get_position_history()
-    return jsonify({"total": len(history), "history": history})
-# ── MANUAL POSITIONS ──────────────────────────────────────────────────────────
+    
+    # Filter history to real broker positions only
+    real_history = [h for h in history if h.get('source', '').lower() in REAL_BROKERS]
+    
+    return jsonify({
+        "total": len(real_history),
+        "history": real_history
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MANUAL POSITIONS (for adding real broker entries)
+# ─────────────────────────────────────────────────────────────────────────────
 @auto_trade_bp.route("/manual/add", methods=["POST"])
 def manual_add_position():
+    """
+    Add a manual position to the portfolio.
+    broker must be one of: Kite, Groww, Upstox, Zerodha, etc.
+    """
     data      = request.get_json(force=True)
     symbol    = data.get("symbol", "").upper().strip()
     qty       = int(data.get("qty", 0))
     buy_price = float(data.get("buy_price", 0))
     broker    = data.get("broker", "Manual")
     itype     = data.get("itype", "STOCK")
+    
     if not symbol or qty <= 0 or buy_price <= 0:
         return jsonify({"error": "symbol, qty and buy_price required"}), 400
+    
+    # Validate broker is a real broker (not paper)
+    if broker.lower() in ['paper', 'manual']:
+        return jsonify({"error": f"Cannot add position with broker='{broker}'. Use a real broker like Kite, Groww, or Upstox"}), 400
+    
     sl_price = round(buy_price * 0.95, 2)
+    
+    # Check if this is a real broker
+    is_real_broker = broker.lower() in REAL_BROKERS
+    paper_mode = not is_real_broker
 
-    # ── Save to Neon DB ───────────────────────────────────────────────────────
+    # Save to Neon DB
     try:
         from db_state import get_conn
         conn = get_conn()
-        cur  = conn.cursor()
+        cur = conn.cursor()
         cur.execute("""
             INSERT INTO upstox_positions
                 (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
                  sl_price, tp_price, tsl_active, synced_at, is_open,
-                 broker, source)
-            VALUES (%s, %s, %s, %s, %s, 0, 0, %s, 0, FALSE, NOW(), TRUE, %s, 'manual')
-        """, (symbol, itype, qty, buy_price, buy_price, sl_price, broker))
+                 broker, source, paper_mode)
+            VALUES (%s, %s, %s, %s, %s, 0, 0, %s, 0, FALSE, NOW(), TRUE, %s, %s, %s)
+        """, (symbol, itype, qty, buy_price, buy_price, sl_price, broker, broker, paper_mode))
         conn.commit()
         cur.close()
         conn.close()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # ── Save to bot_state (in-memory + db_state) ──────────────────────────────
+    # Save to bot_state (in-memory + db_state)
     try:
         from db_state import load_state, save_state
-        state     = load_state() or {}
+        state = load_state() or {}
         positions = state.get("positions", {})
-        positions[symbol + "_" + broker] = {
+        positions[symbol] = {
             "symbol"    : symbol,
             "qty"       : qty,
             "buy_price" : buy_price,
@@ -359,28 +451,43 @@ def manual_add_position():
             "entry_time": "Manual",
             "itype"     : itype,
             "source"    : broker,
+            "broker"    : broker,
+            "paper_mode": paper_mode,
         }
         state["positions"] = positions
         save_state(state)
     except Exception as e:
         print(f"[Manual] state save error: {e}")
 
-    return jsonify({"status": "added", "symbol": symbol, "broker": broker, "sl_price": sl_price})
+    return jsonify({
+        "status": "added",
+        "symbol": symbol,
+        "broker": broker,
+        "sl_price": sl_price,
+        "paper_mode": paper_mode,
+        "message": f"Position added to {'real' if not paper_mode else 'paper'} portfolio"
+    })
+
+
 @auto_trade_bp.route("/manual/remove", methods=["POST"])
 def manual_remove_position():
+    """Remove a position from portfolio."""
     data   = request.get_json(force=True)
     symbol = data.get("symbol", "").upper().strip()
     broker = data.get("broker", "")
+    
     if not symbol:
         return jsonify({"error": "symbol required"}), 400
+    
     try:
         from upstox_db import close_position
         close_position(symbol)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"[Manual] DB close error: {e}")
+    
     try:
         from db_state import load_state, save_state
-        state     = load_state() or {}
+        state = load_state() or {}
         positions = state.get("positions", {})
         key = symbol + "_" + broker if broker else symbol
         positions.pop(key, None)
@@ -389,53 +496,5 @@ def manual_remove_position():
         save_state(state)
     except Exception as e:
         print(f"[Manual] state remove error: {e}")
+    
     return jsonify({"status": "removed", "symbol": symbol})
-# ── PASTE THIS BLOCK at the end of auto_trade_routes.py ──────────────────────
-# DELETE UPSTOX POSITION — remove by symbol + broker directly from DB
-
-@auto_trade_bp.route("/upstox/position/delete", methods=["POST"])
-def delete_upstox_position():
-    """
-    Delete a specific position row from upstox_positions by symbol + broker.
-    Body: {"symbol": "SUNPHARMA.NS", "broker": "Kite"}
-    Called by the 🗑 button in the Upstox Real Portfolio table on the dashboard.
-    """
-    data   = request.get_json(force=True)
-    symbol = data.get("symbol", "").upper().strip()
-    broker = data.get("broker", "")
-    if not symbol:
-        return jsonify({"error": "symbol required"}), 400
-    try:
-        from upstox_db import get_conn
-        conn = get_conn()
-        cur  = conn.cursor()
-        if broker:
-            cur.execute(
-                "DELETE FROM upstox_positions WHERE symbol=%s AND broker=%s",
-                (symbol, broker)
-            )
-        else:
-            cur.execute(
-                "DELETE FROM upstox_positions WHERE symbol=%s",
-                (symbol,)
-            )
-        deleted = cur.rowcount
-        conn.commit()
-        cur.close()
-        conn.close()
-        # Mirror removal in bot_state
-        try:
-            from db_state import load_state, save_state
-            state     = load_state() or {}
-            positions = state.get("positions", {})
-            key = symbol + "_" + broker if broker else symbol
-            positions.pop(key, None)
-            positions.pop(symbol, None)
-            state["positions"] = positions
-            save_state(state)
-        except Exception as e:
-            print(f"[Delete] state remove error: {e}")
-        return jsonify({"status": "deleted", "symbol": symbol,
-                        "broker": broker, "rows_removed": deleted})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500

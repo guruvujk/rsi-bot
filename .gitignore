@@ -3,8 +3,6 @@ __pycache__/
 *.pyc
 .env
 trading.db
-
-
 fix_*.py
 check_*.py
 init_*.py
@@ -12,6 +10,7 @@ test_*.py
 upload_*.py
 dedup_*.py
 *.backup
+*.bak
 test_journal.xlsx
 push_state.py
 restore_state.py
@@ -20,6 +19,6 @@ bot_state.json
 *.json.backup
 logs/
 reset_neon.py
-force_reset.pybot_state.json
+force_reset.py
 logs/*.xlsx
 logs/*.csv

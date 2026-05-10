@@ -501,23 +501,22 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
 
     # ── EXIT CHECK — includes RSI overbought + take-profit ────────────────────
     print(f"\n  Checking {open_count} open position(s)...")
-    for sym, pos in positions.items():
-        try:
-            symbol = pos.get("symbol", sym.split("_")[0])  # ✅ FIX: extract clean symbol (e.g. SUNPHARMA.NS_GROWW → SUNPHARMA.NS)
-            df = yf.download(symbol, period="90d", interval="1d",
-                             progress=False, auto_adjust=True)
-            if df.empty:
-                continue
-            df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
-            price       = float(df["Close"].squeeze().iloc[-1])
-            exit_reason = update_tsl(sym, price, df=df)
-            if exit_reason:
-                result = paper_sell(sym, price, exit_reason)
-                if result["success"]:
-                    sells.append(result["trade"])
-                    open_count -= 1
-        except Exception as e:
-            print(f"  ⚠ Exit check error {sym}: {e}")
+    for sym, p in list(positions.items()):
+      try:
+        df = yf.download(p.get("symbol", sym.split("_")[0]), period="90d", interval="1d",
+                         progress=False, auto_adjust=True)
+        if df.empty:
+            continue
+        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+        price = float(df["Close"].squeeze().iloc[-1])
+        exit_reason = update_tsl(sym, price, df=df)
+        if exit_reason:
+            result = paper_sell(sym, price, exit_reason)
+            if result["success"]:
+                sells.append(result["trade"])
+                open_count -= 1
+      except Exception as e:
+          print(f"  ⚠ Exit check error {sym}: {e}")
 
     # ── ENTRY SCAN ────────────────────────────────────────────────────────────
     if open_count >= MAX_OPEN_POSITIONS:
@@ -669,8 +668,7 @@ def get_portfolio_summary() -> dict:
 
     for symbol, pos in positions.items():
         try:
-            clean_symbol = pos.get("symbol", symbol.split("_")[0])  # ✅ FIX: extract clean symbol
-            df    = yf.download(clean_symbol, period="1d", interval="1m",
+            df    = yf.download(symbol, period="1d", interval="1m",
                                 progress=False, auto_adjust=True)
             price = float(df["Close"].squeeze().iloc[-1]) if not df.empty else pos["buy_price"]
         except Exception:
