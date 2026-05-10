@@ -176,7 +176,7 @@ DASHBOARD_HTML = """
         </table>
     </div>
 
-    <!-- Open Positions Box - mirrors bottom real portfolio -->
+    <!-- Open Positions Box - REAL POSITIONS ONLY -->
     <div class="box">
         <div class="box-title">Real Portfolio — Live Positions <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span></div>
         <table>
@@ -186,10 +186,11 @@ DASHBOARD_HTML = """
                 </tr>
             </thead>
             <tbody id="positions-body">
-                <tr><td colspan="7" class="empty-msg">Loading...</td></tr>
+                <tr><td colspan="7" class="empty-msg">No real positions found. Connect broker (Kite/Groww/Upstox)</td></tr>
             </tbody>
         </table>
     </div>
+</div>
 
 <!-- Trade Log -->
 <div class="grid1">
@@ -299,14 +300,14 @@ function loadRealPositions() {
         .then(d => {
             const tbody = document.getElementById('upstox-body');
             // Filter to real positions only
-           const realPositions = d.positions.filter(p => p.paper_mode !== true);
+            const realPositions = d.positions.filter(p => p.paper_mode === false);
             
             if (realPositions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">No real positions. Add via form or sync broker.</td></tr>';
                 return;
             }
             
-           tbody.innerHTML = realPositions.map(p => {
+            tbody.innerHTML = realPositions.map(p => {
                 const pnlClass = p.pnl > 0 ? 'green' : p.pnl < 0 ? 'red' : 'gray';
                 const buyFmt = p.itype === 'US_STOCK' ? '$' + Number(p.buy_price).toLocaleString('en-US') : '₹' + Number(p.buy_price).toLocaleString('en-IN');
                 const ltpFmt = p.itype === 'US_STOCK' ? '$' + Number(p.ltp).toLocaleString('en-US') : '₹' + Number(p.ltp).toLocaleString('en-IN');
@@ -323,8 +324,6 @@ function loadRealPositions() {
                     <td><button onclick="removeRealPosition('${p.symbol}')" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">✕</button></td>
                 </tr>`;
             }).join('');
-            document.getElementById('positions-body').innerHTML = document.getElementById('upstox-body').innerHTML;
-            document.getElementById('pos-count').textContent = realPositions.length + ' open';
         });
 }
 

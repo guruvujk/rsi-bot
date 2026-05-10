@@ -616,45 +616,6 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
 _scheduler_thread  = None
 _scheduler_running = False
 
-def update_real_positions_ltp():
-    import yfinance as yf
-    from upstox_db import get_conn
-    from datetime import datetime
-    try:
-        conn = get_conn()
-        cur = conn.cursor()
-        cur.execute("SELECT symbol, buy_price FROM upstox_positions WHERE is_open=true")
-        rows = cur.fetchall()
-        for sym, buy in rows:
-            clean_sym = sym.split('_')[0]
-            try:
-                df = yf.download(clean_sym, period='1d', interval='1m', progress=False)
-                if df.empty:
-                    continue
-                val = df['Close'].iloc[-1]
-                if hasattr(val, 'iloc'): val = val.iloc[0]
-                ltp = round(float(val), 2)
-                pnl = round(ltp - buy, 2)
-                pnl_pct = round((pnl / buy) * 100, 2)
-                cur.execute("""
-                    UPDATE upstox_positions
-                    SET ltp=%s, pnl=%s, pnl_pct=%s, synced_at=%s
-                    WHERE symbol=%s
-                """, (ltp, pnl, pnl_pct, datetime.now(), sym))
-                print(f"[LTP] {sym}: {ltp} | PnL: {pnl} ({pnl_pct}%)")
-            except Exception as e:
-                print(f"[LTP] {sym}: {e}")
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"[LTP Update] {e}")
-def send_token_reminder():
-    try:
-        from telegram_alerts import send_alert
-        send_alert('⏰ Upstox token expires at 18:00 IST. Please login now: http://localhost:5000')
-        print('[Reminder] Token reminder sent')
-    except Exception as e:
-        print(f'[Reminder] {e}')
 
 def start_scheduler():
     global _scheduler_running, _scheduler_thread
@@ -666,11 +627,8 @@ def start_scheduler():
             if hh == 9  and mm < 15: continue
             if hh == 15 and mm > 30: continue
             schedule.every().day.at(f"{hh:02d}:{mm:02d}").do(run_scan)
-            schedule.every(5).minutes.do(update_real_positions_ltp)
-    schedule.every().day.at("17:30").do(send_token_reminder)
-    def _run():
 
-    
+    def _run():
         global _scheduler_running
         _scheduler_running = True
         print("  ⏰ Scheduler started — scanning every 15 min (9:15–15:30 IST)")
