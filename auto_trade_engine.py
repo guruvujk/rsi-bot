@@ -501,9 +501,10 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
 
     # ── EXIT CHECK — includes RSI overbought + take-profit ────────────────────
     print(f"\n  Checking {open_count} open position(s)...")
-    for sym in list(positions.keys()):
+    for sym, pos in positions.items():
         try:
-            df = yf.download(sym, period="90d", interval="1d",
+            symbol = pos.get("symbol", sym.split("_")[0])  # ✅ FIX: extract clean symbol (e.g. SUNPHARMA.NS_GROWW → SUNPHARMA.NS)
+            df = yf.download(symbol, period="90d", interval="1d",
                              progress=False, auto_adjust=True)
             if df.empty:
                 continue
@@ -668,7 +669,8 @@ def get_portfolio_summary() -> dict:
 
     for symbol, pos in positions.items():
         try:
-            df    = yf.download(symbol, period="1d", interval="1m",
+            clean_symbol = pos.get("symbol", symbol.split("_")[0])  # ✅ FIX: extract clean symbol
+            df    = yf.download(clean_symbol, period="1d", interval="1m",
                                 progress=False, auto_adjust=True)
             price = float(df["Close"].squeeze().iloc[-1]) if not df.empty else pos["buy_price"]
         except Exception:

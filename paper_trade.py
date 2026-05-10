@@ -518,7 +518,8 @@ class PaperTrader:
         for s, p in self.positions.items():
             if s not in prices:
                 try:
-                    df = yf.download(s, period="1d", interval="5m",
+                    clean_s = p.get("symbol", s.split("_")[0])  # ✅ FIX: extract clean symbol (e.g. SUNPHARMA.NS_GROWW → SUNPHARMA.NS)
+                    df = yf.download(clean_s, period="1d", interval="5m",
                                      progress=False, auto_adjust=True)
                     if not df.empty:
                         prices[s] = float(df["Close"].squeeze().iloc[-1])
