@@ -174,14 +174,24 @@ def get_token_status() -> dict:
 # ═════════════════════════════════════════════════════════════════════════════
 
 def sync_positions_to_db(positions: list):
+    """
+    Full sync: replaces all open positions in DB with the latest list.
+    positions: list of dicts from /api/auto/portfolio or upstox_integration.sync_to_bot()
+
+    Each dict should have: symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
+                           sl_price, tp_price, tsl_active
+    """
     if not positions:
         print("[UpstoxDB] No positions to sync")
         return
 
     conn = get_conn()
     cur  = conn.cursor()
-    now  = datetime.now()
 
+    # Mark all existing positions as closed (will re-insert open ones)
+    cur.execute("UPDATE upstox_positions SET is_open = FALSE WHERE source = 'upstox' OR source IS NULL")
+
+    now = datetime.now()
     for pos in positions:
         symbol     = pos.get("symbol", "")
         itype      = pos.get("itype", "STOCK")
@@ -197,33 +207,35 @@ def sync_positions_to_db(positions: list):
         if not symbol:
             continue
 
-        # Check if open row already exists for this symbol+broker
+        # Upsert: update if exists (by symbol + is_open), else insert
         cur.execute("""
-            SELECT id FROM upstox_positions
-            WHERE symbol = %s AND is_open = TRUE AND source = 'upstox'
-        """, (symbol,))
-        row = cur.fetchone()
+            INSERT INTO upstox_positions
+                (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
+                 sl_price, tp_price, tsl_active, synced_at, is_open, broker, source)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE,'Upstox','upstox')
+            ON CONFLICT DO NOTHING
+        """, (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
+              sl_price, tp_price, tsl_active, now))
 
-        if row:
-            # UPDATE existing row — no new row created
-            cur.execute("""
-                UPDATE upstox_positions
-                SET itype=%s, qty=%s, buy_price=%s, ltp=%s,
-                    pnl=%s, pnl_pct=%s, sl_price=%s, tp_price=%s,
-                    tsl_active=%s, synced_at=%s
-                WHERE id = %s
-            """, (itype, qty, buy_price, ltp, pnl, pnl_pct,
-                  sl_price, tp_price, tsl_active, now, row[0]))
-        else:
-            # INSERT only if no open row exists
-            cur.execute("""
-                INSERT INTO upstox_positions
-                    (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
-                     sl_price, tp_price, tsl_active, synced_at, is_open,
-                     broker, source)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE,'Upstox','upstox')
-            """, (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
-                  sl_price, tp_price, tsl_active, now))
+        # Also update any existing open row for this symbol
+
+        # Also update any existing open row for this symbol
+        cur.execute("""
+            UPDATE upstox_positions
+            SET itype      = %s,
+                qty        = %s,
+                buy_price  = %s,
+                ltp        = %s,
+                pnl        = %s,
+                pnl_pct    = %s,
+                sl_price   = %s,
+                tp_price   = %s,
+                tsl_active = %s,
+                synced_at  = %s,
+                is_open    = TRUE
+            WHERE symbol = %s AND is_open = TRUE
+        """, (itype, qty, buy_price, ltp, pnl, pnl_pct,
+              sl_price, tp_price, tsl_active, now, symbol))
 
     conn.commit()
     cur.close()
