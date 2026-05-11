@@ -1,6 +1,6 @@
-# auto_trade_engine.py — RSI Bot v3 Auto Buy/Sell Engine
+# auto_trade_engine.py  RSI Bot v3 Auto Buy/Sell Engine
 # Paper trading simulation with full filter pipeline
-# Filters: Blacklist → Earnings → ATR → Nifty50 → News → RSI+MACD entry
+# Filters: Blacklist  Earnings  ATR  Nifty50  News  RSI+MACD entry
 # Exit: Fixed SL 5% | Take-profit 8% | RSI overbought >70 | TSL activates +10% trails 5%
 # UPDATED 2026-05-07: RSI overbought exit, take-profit, crypto removed, Telegram alerts
 
@@ -20,14 +20,14 @@ import pytz
 from blacklist import is_blacklisted, record_trade as blacklist_record
 from gainers  import get_position_multiplier, get_adjusted_allocation, record_trade as gainers_record
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 PAPER_TRADES_FILE     = "logs/paper_trades.json"
 OPEN_POSITIONS_FILE   = "logs/open_positions.json"
 
-BASE_CAPITAL          = 100_000.0   # ₹1,00,000 virtual capital
-MAX_CAPITAL_PER_TRADE = 5_000.0     # ₹5,000 base allocation per trade
+BASE_CAPITAL          = 100_000.0   # 1,00,000 virtual capital
+MAX_CAPITAL_PER_TRADE = 5_000.0     # 5,000 base allocation per trade
 MAX_OPEN_POSITIONS    = 5           # max simultaneous positions
 BROKERAGE_PCT         = 0.001       # 0.1% brokerage simulation
 
@@ -55,9 +55,9 @@ ATR_MIN_PCT           = 0.015       # min ATR/price = 1.5%
 NIFTY_SYMBOL          = "^NSEI"
 NIFTY_SMA_PERIOD      = 20
 
-# ─────────────────────────────────────────────────────────────────────────────
-# WATCHLIST — NSE + small US, crypto removed entirely
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# WATCHLIST  NSE + small US, crypto removed entirely
+# 
 WATCHLIST_NSE = [
     "RELIANCE.NS",  "TCS.NS",        "INFY.NS",       "HDFCBANK.NS",  "ICICIBANK.NS",
     "WIPRO.NS",     "BAJFINANCE.NS", "HINDUNILVR.NS",  "SBIN.NS",      "ADANIENT.NS",
@@ -66,11 +66,11 @@ WATCHLIST_NSE = [
 ]
 
 WATCHLIST_US = [
-    "AAPL",    # USD→INR risk — keep allocation small
+    "AAPL",    # USDINR risk  keep allocation small
     "MSFT",
 ]
 
-# Crypto removed — XRP, LINK, BTC, ETH, BNB all unreliable for RSI strategy
+# Crypto removed  XRP, LINK, BTC, ETH, BNB all unreliable for RSI strategy
 WATCHLIST_CRYPTO = []
 
 WATCHLIST = WATCHLIST_NSE + WATCHLIST_US
@@ -78,9 +78,9 @@ MAX_CAPITAL_PER_TRADE_US = 2_500.0
 
 IST = pytz.timezone("Asia/Kolkata")
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # FILE HELPERS
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 def _load_json(path: str, default):
     try:
         with open(path, 'r') as f:
@@ -134,9 +134,9 @@ def append_paper_trade(trade: dict):
     _save_json(PAPER_TRADES_FILE, trades)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # INDICATOR CALCULATIONS
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 def calc_rsi(close: pd.Series, period: int = RSI_PERIOD) -> pd.Series:
     delta = close.diff()
     gain  = delta.clip(lower=0).ewm(alpha=1/period, adjust=False).mean()
@@ -164,18 +164,18 @@ def calc_atr(high: pd.Series, low: pd.Series, close: pd.Series,
     return tr.ewm(alpha=1/period, adjust=False).mean()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FILTER 1 — BLACKLIST
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# FILTER 1  BLACKLIST
+# 
 def filter_blacklist(symbol: str) -> tuple[bool, str]:
     if is_blacklisted(symbol):
         return False, f"{symbol} is blacklisted"
     return True, "OK"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FILTER 2 — EARNINGS DATE (within 3 days)
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# FILTER 2  EARNINGS DATE (within 3 days)
+# 
 def filter_earnings(symbol: str) -> tuple[bool, str]:
     try:
         ticker = yf.Ticker(symbol)
@@ -195,9 +195,9 @@ def filter_earnings(symbol: str) -> tuple[bool, str]:
         return True, f"Earnings check skipped: {e}"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FILTER 3 — ATR VOLATILITY
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# FILTER 3  ATR VOLATILITY
+# 
 def filter_atr(df: pd.DataFrame, symbol: str) -> tuple[bool, str]:
     try:
         atr     = calc_atr(df["High"], df["Low"], df["Close"]).iloc[-1]
@@ -210,29 +210,29 @@ def filter_atr(df: pd.DataFrame, symbol: str) -> tuple[bool, str]:
         return True, f"ATR check skipped: {e}"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FILTER 4 — NIFTY50 SENTIMENT
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# FILTER 4  NIFTY50 SENTIMENT
+# 
 def get_nifty_sentiment() -> tuple[bool, str]:
     try:
         df = yf.download(NIFTY_SYMBOL, period="60d", interval="1d",
                          progress=False, auto_adjust=True)
         if df.empty or len(df) < NIFTY_SMA_PERIOD + 5:
-            return True, "Nifty data unavailable — skipping"
+            return True, "Nifty data unavailable  skipping"
         close = df["Close"].squeeze()
         sma   = close.rolling(NIFTY_SMA_PERIOD).mean().iloc[-1]
         rsi   = calc_rsi(close).iloc[-1]
         price = close.iloc[-1]
         if price > sma and rsi > 45:
-            return True,  f"Nifty bullish: ₹{price:.0f} > SMA {sma:.0f}, RSI {rsi:.1f}"
-        return False, f"Nifty bearish: ₹{price:.0f} vs SMA {sma:.0f}, RSI {rsi:.1f}"
+            return True,  f"Nifty bullish: {price:.0f} > SMA {sma:.0f}, RSI {rsi:.1f}"
+        return False, f"Nifty bearish: {price:.0f} vs SMA {sma:.0f}, RSI {rsi:.1f}"
     except Exception as e:
         return True, f"Nifty check skipped: {e}"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FILTER 5 — NEWS SENTIMENT
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# FILTER 5  NEWS SENTIMENT
+# 
 NEGATIVE_KEYWORDS = [
     "fraud", "scam", "investigation", "probe", "sebi", "ed ",
     "arrest", "default", "insolvency", "bankruptcy", "loss", "decline",
@@ -263,9 +263,9 @@ def filter_news(symbol: str) -> tuple[bool, str]:
         return True, f"News check skipped: {e}"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ENTRY SIGNAL — RSI + MACD crossover
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# ENTRY SIGNAL  RSI + MACD crossover
+# 
 def get_entry_signal(df: pd.DataFrame) -> tuple[bool, dict]:
     try:
         close        = df["Close"].squeeze()
@@ -293,13 +293,13 @@ def get_entry_signal(df: pd.DataFrame) -> tuple[bool, dict]:
         return False, {"error": str(e)}
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# RSI OVERBOUGHT EXIT — NEW
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# RSI OVERBOUGHT EXIT  NEW
+# 
 def check_rsi_overbought(df: pd.DataFrame) -> tuple[bool, float]:
     """
     Returns (triggered, rsi_value).
-    Triggered when RSI crosses above RSI_SELL_THRESHOLD (70) — was below, now above.
+    Triggered when RSI crosses above RSI_SELL_THRESHOLD (70)  was below, now above.
     """
     try:
         close    = df["Close"].squeeze()
@@ -312,9 +312,9 @@ def check_rsi_overbought(df: pd.DataFrame) -> tuple[bool, float]:
         return False, 0.0
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # PAPER ORDER EXECUTION
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 def paper_buy(symbol: str, price: float, allocation: float,
               signal: dict, filter_log: list) -> dict:
     brokerage   = round(allocation * BROKERAGE_PCT, 2)
@@ -348,15 +348,15 @@ def paper_buy(symbol: str, price: float, allocation: float,
     save_open_positions(positions)
     append_paper_trade({**position, "type": "BUY", "cost": actual_cost})
 
-    print(f"  🟢 PAPER BUY  {symbol:20s} ₹{price:>8.2f} × {qty} qty"
-          f"  SL ₹{sl_price:.2f}  TP ₹{tp_price:.2f}"
+    print(f"   PAPER BUY  {symbol:20s} {price:>8.2f}  {qty} qty"
+          f"  SL {sl_price:.2f}  TP {tp_price:.2f}"
           f"  [{datetime.now(IST).strftime('%H:%M:%S')}]")
 
     try:
         from telegram_alerts import alert_buy as _alert_buy
-        _alert_buy(symbol, f"₹{price:.2f}", qty, signal.get("rsi", 0),
-                   f"₹{sl_price:.2f} ({FIXED_SL_PCT*100:.1f}%)",
-                   f"₹{tp_price:.2f} ({TAKE_PROFIT_PCT*100:.1f}%)",
+        _alert_buy(symbol, f"{price:.2f}", qty, signal.get("rsi", 0),
+                   f"{sl_price:.2f} ({FIXED_SL_PCT*100:.1f}%)",
+                   f"{tp_price:.2f} ({TAKE_PROFIT_PCT*100:.1f}%)",
                    0, "STOCK")
     except Exception as e:
         print(f"  [Telegram] alert_buy failed: {e}")
@@ -391,25 +391,25 @@ def paper_sell(symbol: str, exit_price: float, reason: str) -> dict:
     blacklist_record(symbol, result, pnl, pnl_pct)
     gainers_record(symbol,  result, pnl, pnl_pct)
 
-    emoji = "💚" if result == "WIN" else "🔴"
-    print(f"  {emoji} PAPER SELL {symbol:20s} ₹{exit_price:>8.2f}  "
-          f"P&L ₹{pnl:>8.2f} ({pnl_pct:+.1f}%)  [{reason}]")
+    emoji = "" if result == "WIN" else ""
+    print(f"  {emoji} PAPER SELL {symbol:20s} {exit_price:>8.2f}  "
+          f"P&L {pnl:>8.2f} ({pnl_pct:+.1f}%)  [{reason}]")
 
     try:
         from telegram_alerts import alert_sell as _alert_sell
         from db_state import load_state as _ls
         _cap = (_ls() or {}).get("capital", 0)
-        _alert_sell(symbol, f"₹{exit_price:.2f}", qty, reason, pnl, 0, _cap, "STOCK")
+        _alert_sell(symbol, f"{exit_price:.2f}", qty, reason, pnl, 0, _cap, "STOCK")
     except Exception as e:
         print(f"  [Telegram] alert_sell failed: {e}")
 
     return {"success": True, "trade": trade_log}
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# TSL UPDATER — extended with take-profit and RSI overbought exit
-# Priority: Fixed SL → Take-profit → RSI overbought → TSL trail
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# TSL UPDATER  extended with take-profit and RSI overbought exit
+# Priority: Fixed SL  Take-profit  RSI overbought  TSL trail
+# 
 def update_tsl(symbol: str, current_price: float,
                df: pd.DataFrame = None) -> Optional[str]:
     positions = load_open_positions()
@@ -436,17 +436,17 @@ def update_tsl(symbol: str, current_price: float,
         save_open_positions(positions)
         return reason
 
-    # ── 1. Fixed SL ───────────────────────────────────────────────────────────
+    #  1. Fixed SL 
     if current_price <= pos["sl_price"]:
-        return _save_and_return(f"Fixed SL hit ₹{pos['sl_price']:.2f}")
+        return _save_and_return(f"Fixed SL hit {pos['sl_price']:.2f}")
 
-    # ── 2. Take-profit (before TSL activates) ─────────────────────────────────
+    #  2. Take-profit (before TSL activates) 
     if not pos["tsl_active"] and current_price >= pos["tp_price"]:
         return _save_and_return(
-            f"Take-profit hit ₹{pos['tp_price']:.2f} (+{TAKE_PROFIT_PCT*100:.0f}%)"
+            f"Take-profit hit {pos['tp_price']:.2f} (+{TAKE_PROFIT_PCT*100:.0f}%)"
         )
 
-    # ── 3. RSI overbought crossover (>70) ─────────────────────────────────────
+    #  3. RSI overbought crossover (>70) 
     if df is not None:
         overbought, rsi_val = check_rsi_overbought(df)
         if overbought:
@@ -454,11 +454,11 @@ def update_tsl(symbol: str, current_price: float,
                 f"RSI overbought exit (RSI {rsi_val:.1f} > {RSI_SELL_THRESHOLD})"
             )
 
-    # ── 4. TSL activation + trail ─────────────────────────────────────────────
+    #  4. TSL activation + trail 
     if not pos["tsl_active"] and profit_pct >= TSL_ACTIVATE_PCT:
         pos["tsl_active"] = True
         pos["tsl_price"]  = round(pos["peak_price"] * (1 - TSL_TRAIL_PCT), 2)
-        print(f"  🔔 TSL ACTIVATED for {symbol} at ₹{pos['tsl_price']:.2f}")
+        print(f"   TSL ACTIVATED for {symbol} at {pos['tsl_price']:.2f}")
 
     if pos["tsl_active"]:
         new_tsl = round(pos["peak_price"] * (1 - TSL_TRAIL_PCT), 2)
@@ -466,16 +466,16 @@ def update_tsl(symbol: str, current_price: float,
             pos["tsl_price"] = new_tsl
 
     if pos["tsl_active"] and pos["tsl_price"] and current_price <= pos["tsl_price"]:
-        return _save_and_return(f"TSL hit ₹{pos['tsl_price']:.2f}")
+        return _save_and_return(f"TSL hit {pos['tsl_price']:.2f}")
 
     positions[symbol] = pos
     save_open_positions(positions)
     return None
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # MAIN SCAN
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 def run_scan(symbols: list = None, force: bool = False) -> dict:
     now     = datetime.now(IST)
     symbols = symbols or WATCHLIST
@@ -493,13 +493,13 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
     print(f"{'='*60}")
 
     nifty_ok, nifty_reason = get_nifty_sentiment()
-    print(f"  Nifty: {'✅' if nifty_ok else '❌'} {nifty_reason}")
+    print(f"  Nifty: {'' if nifty_ok else ''} {nifty_reason}")
 
     positions  = load_open_positions()
     open_count = len(positions)
     buys = []; sells = []; skipped = []
 
-    # ── EXIT CHECK — includes RSI overbought + take-profit ────────────────────
+    #  EXIT CHECK  includes RSI overbought + take-profit 
     print(f"\n  Checking {open_count} open position(s)...")
     for sym, p in list(positions.items()):
       try:
@@ -516,11 +516,11 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
                 sells.append(result["trade"])
                 open_count -= 1
       except Exception as e:
-          print(f"  ⚠ Exit check error {sym}: {e}")
+          print(f"   Exit check error {sym}: {e}")
 
-    # ── ENTRY SCAN ────────────────────────────────────────────────────────────
+    #  ENTRY SCAN 
     if open_count >= MAX_OPEN_POSITIONS:
-        print(f"\n  Max positions ({MAX_OPEN_POSITIONS}) reached — skipping entry scan")
+        print(f"\n  Max positions ({MAX_OPEN_POSITIONS}) reached  skipping entry scan")
     else:
         print(f"\n  Scanning {len(symbols)} symbols ({open_count}/{MAX_OPEN_POSITIONS} open)...")
         positions = load_open_positions()
@@ -538,7 +538,7 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
             filter_log.append({"filter": "blacklist", "passed": ok, "reason": reason})
             if not ok:
                 skipped.append({"symbol": symbol, "reason": reason})
-                print(f"  ⛔ {symbol:<20} SKIP — {reason}")
+                print(f"   {symbol:<20} SKIP  {reason}")
                 continue
 
             try:
@@ -556,27 +556,27 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
             filter_log.append({"filter": "earnings", "passed": ok, "reason": reason})
             if not ok:
                 skipped.append({"symbol": symbol, "reason": reason})
-                print(f"  📅 {symbol:<20} SKIP — {reason}")
+                print(f"   {symbol:<20} SKIP  {reason}")
                 continue
 
             ok, reason = filter_atr(df, symbol)
             filter_log.append({"filter": "atr", "passed": ok, "reason": reason})
             if not ok:
                 skipped.append({"symbol": symbol, "reason": reason})
-                print(f"  📉 {symbol:<20} SKIP — {reason}")
+                print(f"   {symbol:<20} SKIP  {reason}")
                 continue
 
             filter_log.append({"filter": "nifty", "passed": nifty_ok, "reason": nifty_reason})
             if not nifty_ok:
                 skipped.append({"symbol": symbol, "reason": nifty_reason})
-                print(f"  🌐 {symbol:<20} SKIP — {nifty_reason}")
+                print(f"   {symbol:<20} SKIP  {nifty_reason}")
                 continue
 
             ok, reason = filter_news(symbol)
             filter_log.append({"filter": "news", "passed": ok, "reason": reason})
             if not ok:
                 skipped.append({"symbol": symbol, "reason": reason})
-                print(f"  📰 {symbol:<20} SKIP — {reason}")
+                print(f"   {symbol:<20} SKIP  {reason}")
                 continue
 
             entry, signal = get_entry_signal(df)
@@ -585,7 +585,7 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
                 "reason": f"RSI {signal.get('rsi','?')} MACD cross={signal.get('macd_cross','?')}"
             })
             if not entry:
-                print(f"  ⚪ {symbol:<20} NO SIGNAL — RSI {signal.get('rsi','?'):.1f}")
+                print(f"   {symbol:<20} NO SIGNAL  RSI {signal.get('rsi','?'):.1f}")
                 skipped.append({"symbol": symbol, "reason": "No entry signal"})
                 continue
 
@@ -604,15 +604,15 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
         "skipped_count" : len(skipped),
         "open_positions": len(load_open_positions()),
     }
-    print(f"\n  ✅ Scan complete — Buys: {len(buys)}  Sells: {len(sells)}"
+    print(f"\n   Scan complete  Buys: {len(buys)}  Sells: {len(sells)}"
           f"  Skipped: {len(skipped)}  Open: {summary['open_positions']}")
     print(f"{'='*60}\n")
     return summary
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # SCHEDULER
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 _scheduler_thread  = None
 _scheduler_running = False
 
@@ -631,7 +631,7 @@ def start_scheduler():
     def _run():
         global _scheduler_running
         _scheduler_running = True
-        print("  ⏰ Scheduler started — scanning every 15 min (9:15–15:30 IST)")
+        print("   Scheduler started  scanning every 15 min (9:1515:30 IST)")
         while _scheduler_running:
             schedule.run_pending()
             time.sleep(30)
@@ -657,9 +657,9 @@ def scheduler_status() -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # PORTFOLIO SUMMARY
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 def get_portfolio_summary() -> dict:
     positions      = load_open_positions()
     rows           = []

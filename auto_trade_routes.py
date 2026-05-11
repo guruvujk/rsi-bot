@@ -1,4 +1,4 @@
-# auto_trade_routes.py — Flask API routes for RSI Bot v3 Auto Trading
+# auto_trade_routes.py  Flask API routes for RSI Bot v3 Auto Trading
 # Endpoints: start/stop scheduler, manual scan, portfolio, trade history
 
 from flask import Blueprint, jsonify, request
@@ -28,9 +28,9 @@ REAL_BROKERS = ['kite', 'groww', 'upstox', 'zerodha', 'angel', 'angelone',
                 'sharekhan', 'stoxkart', 'coin', 'dhan']
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # SCHEDULER CONTROL
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/start", methods=["POST"])
 def start():
     """Start the background scan scheduler."""
@@ -51,9 +51,9 @@ def status():
     return jsonify(scheduler_status())
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # MANUAL SCAN TRIGGER
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/scan", methods=["POST"])
 def manual_scan():
     """
@@ -68,9 +68,9 @@ def manual_scan():
     return jsonify(result)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # PORTFOLIO - ALL POSITIONS (including paper trades)
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/portfolio", methods=["GET"])
 def portfolio():
     """Get ALL open positions with live P&L (includes paper trades)."""
@@ -136,9 +136,9 @@ def close_all():
     return jsonify({"closed": len(results), "results": results})
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # TRADE HISTORY
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/trades", methods=["GET"])
 def trade_history():
     """
@@ -171,9 +171,9 @@ def trade_history():
     })
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# SIGNAL INSPECTOR — debug a single symbol
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# SIGNAL INSPECTOR  debug a single symbol
+# 
 @auto_trade_bp.route("/inspect/<symbol>", methods=["GET"])
 def inspect_symbol(symbol):
     """
@@ -224,7 +224,7 @@ def inspect_symbol(symbol):
 
     # Overall verdict
     all_passed = all(f["passed"] for f in report["filters"])
-    report["verdict"] = "BUY ✅" if (all_passed and entry) else "SKIP ⛔"
+    report["verdict"] = "BUY " if (all_passed and entry) else "SKIP "
     report["block_reason"] = next(
         (f["reason"] for f in report["filters"] if not f["passed"]),
         None if entry else "No RSI+MACD crossover signal"
@@ -233,9 +233,9 @@ def inspect_symbol(symbol):
     return jsonify(report)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # BLACKLIST MANAGEMENT
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/blacklist", methods=["GET"])
 def get_blacklist_route():
     return jsonify({
@@ -265,25 +265,25 @@ def remove_blacklist():
     return jsonify({"whitelisted": symbol})
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # GAINERS / TIERS
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/gainers", methods=["GET"])
 def get_gainers():
     return jsonify(get_all_favorites())
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # WATCHLIST
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/watchlist", methods=["GET"])
 def get_watchlist():
     return jsonify({"watchlist": WATCHLIST, "count": len(WATCHLIST)})
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONFIG — view and hot-update engine settings
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+# CONFIG  view and hot-update engine settings
+# 
 @auto_trade_bp.route("/config", methods=["GET"])
 def get_config():
     import auto_trade_engine as eng
@@ -315,9 +315,9 @@ def set_config():
     return jsonify({"status": "updated", "updated": updated})
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # UPSTOX / REAL BROKER INTEGRATION
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/upstox/login", methods=["GET"])
 def upstox_login():
     from upstox_integration import get_login_url
@@ -386,9 +386,9 @@ def upstox_position_history():
     })
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 # MANUAL POSITIONS (for adding real broker entries)
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 @auto_trade_bp.route("/manual/add", methods=["POST"])
 def manual_add_position():
     """

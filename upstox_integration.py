@@ -37,7 +37,7 @@ def get_access_token(auth_code: str) -> str:
         print(f"Upstox token saved")
         try:
             save_token(token)
-            print("[Upstox] Token saved to Neon DB ✅")
+            print("[Upstox] Token saved to Neon DB ")
         except Exception as e:
             print(f"[Upstox] DB token save failed: {e}")
         return token
@@ -131,10 +131,10 @@ def sync_to_bot(token: str):
     save_state(state)
     try:
         sync_positions_to_db(cleaned)
-        print(f"[Upstox] {len(cleaned)} positions saved to Neon DB ✅")
+        print(f"[Upstox] {len(cleaned)} positions saved to Neon DB ")
     except Exception as e:
         print(f"[Upstox] DB position sync failed: {e}")
-    print(f"Sync complete — {len(bot_positions)} positions in DB")
+    print(f"Sync complete  {len(bot_positions)} positions in DB")
 
 if __name__ == "__main__":
     print(f"Login URL:\n{get_login_url()}")

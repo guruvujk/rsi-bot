@@ -1,4 +1,4 @@
-# upstox_db.py — Neon DB persistence for Upstox positions + token
+# upstox_db.py  Neon DB persistence for Upstox positions + token
 # Drop into: C:\Users\JKRAOWIN\rsi_bot_v2\rsi_bot_v2\
 # Works alongside your existing db_state.py (reuses get_conn)
 
@@ -7,21 +7,21 @@ from datetime import datetime
 import json
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-#  SECTION 1 — TABLE INIT  (call once from main.py or db_state.init_db)
-# ═════════════════════════════════════════════════════════════════════════════
+# 
+#  SECTION 1  TABLE INIT  (call once from main.py or db_state.init_db)
+# 
 
 def init_upstox_tables():
     """
     Creates 2 tables in your Neon DB:
-      upstox_token     — stores the daily access token
-      upstox_positions — stores synced Upstox portfolio positions
+      upstox_token      stores the daily access token
+      upstox_positions  stores synced Upstox portfolio positions
     Safe to call on every startup (IF NOT EXISTS).
     """
     conn = get_conn()
     cur  = conn.cursor()
 
-    # ── Token table ───────────────────────────────────────────────────────────
+    #  Token table 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS upstox_token (
             id           SERIAL PRIMARY KEY,
@@ -32,7 +32,7 @@ def init_upstox_tables():
         )
     """)
 
-    # ── Positions table ───────────────────────────────────────────────────────
+    #  Positions table 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS upstox_positions (
             id          SERIAL PRIMARY KEY,
@@ -51,7 +51,7 @@ def init_upstox_tables():
         )
     """)
 
-    # ── Add missing columns if upgrading from older schema ────────────────────
+    #  Add missing columns if upgrading from older schema 
     for col, defn in [
         ("tsl_active", "BOOLEAN DEFAULT FALSE"),
         ("tp_price",   "REAL DEFAULT 0"),
@@ -69,9 +69,9 @@ def init_upstox_tables():
     print("[UpstoxDB] Tables ready: upstox_token, upstox_positions")
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-#  SECTION 2 — TOKEN PERSISTENCE
-# ═════════════════════════════════════════════════════════════════════════════
+# 
+#  SECTION 2  TOKEN PERSISTENCE
+# 
 
 def save_token(access_token: str, expires_at=None):
     """
@@ -169,9 +169,9 @@ def get_token_status() -> dict:
         return {"has_token": False, "is_valid": False, "error": str(e)}
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-#  SECTION 3 — POSITION PERSISTENCE
-# ═════════════════════════════════════════════════════════════════════════════
+# 
+#  SECTION 3  POSITION PERSISTENCE
+# 
 
 def sync_positions_to_db(positions: list):
     if not positions:
@@ -205,7 +205,7 @@ def sync_positions_to_db(positions: list):
         row = cur.fetchone()
 
         if row:
-            # UPDATE existing row — no new row created
+            # UPDATE existing row  no new row created
             cur.execute("""
                 UPDATE upstox_positions
                 SET itype=%s, qty=%s, buy_price=%s, ltp=%s,
