@@ -559,6 +559,40 @@ def push_updates():
         if _fs:
             bot_state['capital'] = _fs.get('capital', bot_state['capital'])
             bot_state['positions'] = _fs.get('positions', bot_state['positions'])
+        # Update real positions LTP from yfinance (per row, correct P&L)
+        try:
+            from upstox_db import load_positions
+            from db_state import get_conn
+            import yfinance as yf
+            real_positions = load_positions()
+            ltp_cache = {}
+            for pos in real_positions:
+                sym = pos['symbol']
+                if sym not in ltp_cache:
+                    try:
+                        ltp_cache[sym] = yf.Ticker(sym).fast_info['last_price']
+                    except Exception:
+                        ltp_cache[sym] = None
+            conn = get_conn()
+            cur  = conn.cursor()
+            cur.execute("SELECT id, symbol, buy_price, qty FROM upstox_positions WHERE is_open = TRUE")
+            rows = cur.fetchall()
+            for row in rows:
+                rid, sym, buy, qty = row
+                ltp = ltp_cache.get(sym)
+                if ltp and buy:
+                    pnl     = round((ltp - buy) * qty, 2)
+                    pnl_pct = round((ltp - buy) / buy * 100, 2)
+                    cur.execute("""
+                        UPDATE upstox_positions
+                        SET ltp = %s, pnl = %s, pnl_pct = %s, synced_at = NOW()
+                        WHERE id = %s
+                    """, (ltp, pnl, pnl_pct, rid))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"[LTP] {e}")
         socketio.emit('state_update', bot_state)
         time.sleep(5)
 

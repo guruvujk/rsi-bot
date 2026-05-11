@@ -72,7 +72,7 @@
       "broker": "Upstox",
       "stop_loss": 1813.098,
       "target": 1905.603,
-      "highest_price": 1850.1
+      "highest_price": 1850.8
     }
   },
   "trades": [
@@ -292,5 +292,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 214.78
+  "return_pct": 214.83
 }
