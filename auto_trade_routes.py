@@ -480,8 +480,23 @@ def manual_remove_position():
         return jsonify({"error": "symbol required"}), 400
     
     try:
-        from upstox_db import close_position
-        close_position(symbol)
+        from db_state import get_conn
+        conn = get_conn()
+        cur  = conn.cursor()
+        if broker:
+            cur.execute("""
+                UPDATE upstox_positions SET is_open = FALSE
+                WHERE symbol = %s AND broker = %s AND is_open = TRUE
+            """, (symbol, broker))
+        else:
+            cur.execute("""
+                UPDATE upstox_positions SET is_open = FALSE
+                WHERE symbol = %s AND is_open = TRUE
+                LIMIT 1
+            """, (symbol,))
+        conn.commit()
+        cur.close()
+        conn.close()
     except Exception as e:
         print(f"[Manual] DB close error: {e}")
     

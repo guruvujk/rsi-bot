@@ -1,5 +1,5 @@
 {
-  "capital": 315102.95930000005,
+  "capital": 297482.15930000006,
   "positions": {
     "ITC.NS": {
       "qty": 16,
@@ -17,24 +17,6 @@
       "tsl_active": true,
       "highest_price": 311.25,
       "tsl_activates_at": 340.94,
-      "broker": "Groww"
-    },
-    "WIPRO.NS": {
-      "qty": 52,
-      "itype": "STOCK",
-      "target": 203.94,
-      "buy_time": "07:27",
-      "sl_price": 194.04,
-      "tp_price": 213.84,
-      "buy_price": 198.0,
-      "stop_loss": 194.04,
-      "tsl_price": 188.1,
-      "allocation": 10296.0,
-      "entry_time": "07:27",
-      "peak_price": 198.0,
-      "tsl_active": true,
-      "highest_price": 198.56,
-      "tsl_activates_at": 217.8,
       "broker": "Groww"
     },
     "MARUTI.NS": {
@@ -55,24 +37,25 @@
       "tsl_activates_at": 15046.9,
       "broker": "Kite"
     },
-    "SUNPHARMA.NS": {
-      "symbol": "SUNPHARMA.NS",
-      "qty": 1,
-      "buy_price": 1850.1,
-      "sl_price": 1757.59,
-      "tsl_active": true,
-      "peak_price": 1847.9,
-      "tsl_price": 1755.51,
-      "allocation": 1850.1,
-      "brokerage": 0,
-      "entry_time": "Upstox Import",
+    "SBIN.NS": {
+      "qty": 9,
+      "buy_price": 977.7,
+      "buy_time": "05:43",
       "itype": "STOCK",
-      "source": "UPSTOX",
-      "tsl_activates_at": 2035.11,
-      "broker": "Upstox",
-      "stop_loss": 1813.098,
-      "target": 1905.603,
-      "highest_price": 1850.8
+      "stop_loss": 958.146,
+      "target": 1007.031,
+      "highest_price": 978.1,
+      "tsl_active": false
+    },
+    "BHARTIARTL.NS": {
+      "qty": 5,
+      "buy_price": 1764.3,
+      "buy_time": "11:29",
+      "itype": "STOCK",
+      "stop_loss": 1729.014,
+      "target": 1817.229,
+      "highest_price": 1770.9,
+      "tsl_active": false
     }
   },
   "trades": [
@@ -285,6 +268,34 @@
       "pnl": "",
       "reason": "RSI BUY",
       "itype": "STOCK"
+    },
+    {
+      "date": "11-May-2026",
+      "time": "11:13",
+      "symbol": "SBIN.NS",
+      "action": "BUY",
+      "price": 977.7,
+      "buy_price": 977.7,
+      "sell_price": "",
+      "qty": 9,
+      "rsi": 29.2,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "11-May-2026",
+      "time": "11:29",
+      "symbol": "BHARTIARTL.NS",
+      "action": "BUY",
+      "price": 1764.3,
+      "buy_price": 1764.3,
+      "sell_price": "",
+      "qty": 5,
+      "rsi": 21.3,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 2,
@@ -292,5 +303,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 214.85
+  "return_pct": 197.41
 }

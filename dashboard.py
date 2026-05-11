@@ -249,7 +249,7 @@ DASHBOARD_HTML = """
 
 <script>
 // Add real position (paper_mode = false)
-/*
+
 function addRealPosition() {
     const symbol = document.getElementById('m-symbol').value.trim().toUpperCase();
     const qty = document.getElementById('m-qty').value;
@@ -283,7 +283,7 @@ function addRealPosition() {
         }
     });
 }
-*/
+
 
 function upstoxLogin() {
     fetch('/api/auto/upstox/login').then(r => r.json()).then(d => { window.open(d.login_url, '_blank'); });
@@ -329,7 +329,7 @@ function loadRealPositions() {
                     '<td>' + ltpFmt + '</td>' +
                     '<td style="font-weight:600;color:' + pnlColor + '">' + pnlFmt + '</td>' +
                     '<td><span class="badge" style="background:' + brokerBg + ';color:' + brokerColor + '">' + (p.broker || 'Real') + '</span></td>' +
-                    '<td><button data-sym="' + p.symbol + '" onclick="removeRealPosition(this.dataset.sym)" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">X</button></td>' +
+                    '<td><button data-sym="' + p.symbol + '" data-broker="' + (p.broker||'') + '" onclick="removeRealPosition(this.dataset.sym, this.dataset.broker)" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">X</button></td>' +
                     '</tr>';
             }
 
@@ -366,9 +366,9 @@ function loadRealPositions() {
         });
 }
 
-function removeRealPosition(symbol) {
-    if (!confirm('Remove ' + symbol + ' from real portfolio?')) return;
-    fetch('/api/position/remove', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:symbol})})
+function removeRealPosition(symbol, broker) {
+    if (!confirm('Remove ' + symbol + ' (' + broker + ') from real portfolio?')) return;
+    fetch('/api/auto/manual/remove', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:symbol, broker:broker})})
         .then(r => r.json()).then(d => { if(d.status==='ok'){alert(symbol+' removed');loadRealPositions();} else{alert('Error');} });
 }
 
