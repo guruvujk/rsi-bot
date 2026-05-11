@@ -18,9 +18,9 @@
       "highest_price": 311.25,
       "tsl_activates_at": 340.94,
       "broker": "Groww",
-      "ltp": 305.85,
-      "pnl": -65.6,
-      "pnl_pct": -1.32
+      "ltp": 305.7,
+      "pnl": -68.0,
+      "pnl_pct": -1.37
     },
     "MARUTI.NS": {
       "qty": 1,
@@ -39,9 +39,9 @@
       "highest_price": 13777.0,
       "tsl_activates_at": 15046.9,
       "broker": "Kite",
-      "ltp": 13480.0,
-      "pnl": -199.0,
-      "pnl_pct": -1.45
+      "ltp": 13479.0,
+      "pnl": -200.0,
+      "pnl_pct": -1.46
     },
     "SBIN.NS": {
       "qty": 9,
@@ -58,9 +58,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 974.9,
-      "pnl": -25.2,
-      "pnl_pct": -0.29
+      "ltp": 975.4,
+      "pnl": -20.7,
+      "pnl_pct": -0.24
     },
     "BHARTIARTL.NS": {
       "qty": 5,
@@ -77,9 +77,9 @@
       "entry_time": "11:29",
       "tsl_price": null,
       "tp_price": 1905.44,
-      "ltp": 1765.2,
-      "pnl": 4.5,
-      "pnl_pct": 0.05
+      "ltp": 1764.9,
+      "pnl": 3.0,
+      "pnl_pct": 0.03
     }
   },
   "trades": [
