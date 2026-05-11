@@ -39,9 +39,9 @@
       "highest_price": 13777.0,
       "tsl_activates_at": 15046.9,
       "broker": "Kite",
-      "ltp": 13479.0,
-      "pnl": -200.0,
-      "pnl_pct": -1.46
+      "ltp": 13483.0,
+      "pnl": -196.0,
+      "pnl_pct": -1.43
     },
     "SBIN.NS": {
       "qty": 9,
@@ -341,5 +341,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 197.03
+  "return_pct": 197.04
 }
