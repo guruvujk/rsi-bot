@@ -156,7 +156,13 @@ DASHBOARD_HTML = """
     <div class="stat"><div class="label">Available Capital</div><div class="value blue" id="capital">...</div></div>
     <div class="stat"><div class="label">Portfolio Value</div><div class="value" id="portfolio_val">...</div></div>
     <div class="stat"><div class="label">Realised P&L</div><div class="value green" id="pnl">Rs.0</div></div>
-    <div class="stat"><div class="label">Unrealised P&L</div><div class="value gray" id="open_pnl">Rs.0</div></div>
+    <div class="stat">
+    <div class="label">Unrealised P&L</div>
+    <div class="value gray" id="open_pnl">Rs.0</div>
+    <div style="margin-top:6px;font-size:11px;color:#64748b;">
+        Total: <span id="total_pnl" style="font-weight:600;color:#475569;">Rs.0</span>
+    </div>
+</div>
 </div>
 
 <div class="stats2">
@@ -378,6 +384,7 @@ socket.on('state_update', (d) => {
     document.getElementById('portfolio_val').textContent = fmt(d.portfolio_val || d.capital || 0);
     const pnlEl = document.getElementById('pnl'); pnlEl.textContent = fmt(d.pnl || 0); colorVal(pnlEl, d.pnl || 0);
     const opEl = document.getElementById('open_pnl'); opEl.textContent = fmt(d.open_pnl || 0); colorVal(opEl, d.open_pnl || 0);
+    const totalPnl = (d.open_pnl || 0) + (d.pnl || 0); document.getElementById('total_pnl').textContent = fmt(totalPnl);      document.getElementById('total_pnl').style.color = totalPnl > 0 ? '#16a34a' : totalPnl < 0 ? '#dc2626' : '#475569';
     const retEl = document.getElementById('return_pct'); retEl.textContent = (d.return_pct || 0) + '%'; colorVal(retEl, d.return_pct || 0);
     document.getElementById('total_trades').textContent = d.total_trades || 0;
     document.getElementById('win_rate').textContent = (d.win_rate || 0) + '%';
