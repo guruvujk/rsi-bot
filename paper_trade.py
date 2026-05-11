@@ -558,7 +558,7 @@ class PaperTrader:
             ltp = prices[symbol]
             ltp_inr = ltp * rate if ("-USD" in symbol or pos.get("itype") == "US_STOCK") else ltp
             buy_inr = pos["buy_price"] * rate if pos.get("itype") == "US_STOCK" else pos["buy_price"]
-            stop_loss = buy_inr * (1 - STOP_LOSS_PCT)
+            stop_loss = pos.get("stop_loss", buy_inr * (1 - STOP_LOSS_PCT))
 
             if ltp_inr <= stop_loss:
                 loss_pct = (ltp_inr - buy_inr) / buy_inr
