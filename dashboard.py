@@ -177,16 +177,17 @@ DASHBOARD_HTML = """
     </div>
 
     <!-- Open Positions Box - REAL POSITIONS ONLY -->
+    <!-- Open Positions Box - REAL + PAPER -->
     <div class="box">
-        <div class="box-title">Real Portfolio -- Live Positions <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span></div>
+        <div class="box-title">Live Positions <span id="pos-count" style="font-size:11px;color:#94a3b8;"></span></div>
         <table>
             <thead>
                 <tr>
-                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Broker</th><th></th>
+                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Tag</th><th></th>
                 </tr>
             </thead>
             <tbody id="positions-body">
-                <tr><td colspan="7" class="empty-msg">No real positions found. Connect broker (Kite/Groww/Upstox)</td></tr>
+                <tr><td colspan="7" class="empty-msg">Loading positions...</td></tr>
             </tbody>
         </table>
     </div>
@@ -296,35 +297,66 @@ function syncAllBrokers() {
 }
 
 function loadRealPositions() {
+    // Fetch real broker positions
     fetch('/api/auto/upstox/positions')
         .then(function(r){ return r.json(); })
         .then(function(d){
+            var realPositions = d.positions || [];
+            // Fetch paper positions from socket state
+            var paperPositions = window._paperPositions || [];
             var tbody = document.getElementById('positions-body');
-            var positions = d.positions || [];
-            if (positions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">No real positions. Add via form above.</td></tr>';
-                return;
-            }
             var html = '';
-            for (var i = 0; i < positions.length; i++) {
-                var p = positions[i];
-                var buyFmt = p.itype === 'US_STOCK' ? '$' + Number(p.buy_price).toFixed(2) : 'Rs.' + Number(p.buy_price).toLocaleString('en-IN');
-                var ltpFmt = p.itype === 'US_STOCK' ? '$' + Number(p.ltp).toFixed(2) : 'Rs.' + Number(p.ltp).toLocaleString('en-IN');
+
+            // Real positions first
+            for (var i = 0; i < realPositions.length; i++) {
+                var p = realPositions[i];
+                var buyFmt = 'Rs.' + Number(p.buy_price).toLocaleString('en-IN');
+                var ltpFmt = 'Rs.' + Number(p.ltp).toLocaleString('en-IN');
                 var pnlFmt = (p.pnl >= 0 ? '+' : '-') + 'Rs.' + Math.abs(p.pnl).toFixed(2);
                 var pnlColor = p.pnl > 0 ? '#16a34a' : p.pnl < 0 ? '#dc2626' : '#64748b';
                 var brokerColor = p.broker === 'Upstox' ? '#2563eb' : p.broker === 'Kite' ? '#16a34a' : p.broker === 'Groww' ? '#854d0e' : '#64748b';
                 var brokerBg = p.broker === 'Upstox' ? '#eff6ff' : p.broker === 'Kite' ? '#f0fdf4' : p.broker === 'Groww' ? '#fef9c3' : '#f1f5f9';
-                html += '<tr>' +
+                html += '<tr style="background:#f0fdf4;">' +
                     '<td style="font-weight:600">' + p.symbol + '</td>' +
                     '<td>' + p.qty + '</td>' +
                     '<td>' + buyFmt + '</td>' +
                     '<td>' + ltpFmt + '</td>' +
                     '<td style="font-weight:600;color:' + pnlColor + '">' + pnlFmt + '</td>' +
-                    '<td><span class="badge" style="background:' + brokerBg + ';color:' + brokerColor + '">' + (p.broker || 'Unknown') + '</span></td>' +
+                    '<td><span class="badge" style="background:' + brokerBg + ';color:' + brokerColor + '">' + (p.broker || 'Real') + '</span></td>' +
                     '<td><button data-sym="' + p.symbol + '" onclick="removeRealPosition(this.dataset.sym)" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">X</button></td>' +
                     '</tr>';
             }
+
+            // Separator if both exist
+            if (realPositions.length > 0 && paperPositions.length > 0) {
+                html += '<tr><td colspan="7" style="padding:4px 16px;font-size:10px;color:#94a3b8;background:#f8fafc;border-top:2px dashed #e2e8f0;">PAPER TRADES</td></tr>';
+            }
+
+            // Paper positions below
+            for (var j = 0; j < paperPositions.length; j++) {
+                var pp = paperPositions[j];
+                var isUSD = pp.itype === 'US_STOCK';
+                var pbuyFmt = isUSD ? '$' + Number(pp.buy_price).toFixed(2) : 'Rs.' + Number(pp.buy_price).toLocaleString('en-IN');
+                var pltpFmt = isUSD ? '$' + Number(pp.ltp).toFixed(2) : 'Rs.' + Number(pp.ltp).toLocaleString('en-IN');
+                var ppnl = pp.pnl || 0;
+                var ppnlFmt = (ppnl >= 0 ? '+' : '-') + 'Rs.' + Math.abs(ppnl).toFixed(2);
+                var ppnlColor = ppnl > 0 ? '#16a34a' : ppnl < 0 ? '#dc2626' : '#64748b';
+                html += '<tr>' +
+                    '<td style="font-weight:600;color:#475569">' + pp.symbol + '</td>' +
+                    '<td>' + pp.qty + '</td>' +
+                    '<td>' + pbuyFmt + '</td>' +
+                    '<td>' + pltpFmt + '</td>' +
+                    '<td style="font-weight:600;color:' + ppnlColor + '">' + ppnlFmt + '</td>' +
+                    '<td><span class="badge" style="background:#f1f5f9;color:#64748b;">Paper</span></td>' +
+                    '<td></td>' +
+                    '</tr>';
+            }
+
+            if (html === '') {
+                html = '<tr><td colspan="7" class="empty-msg">No positions yet</td></tr>';
+            }
             tbody.innerHTML = html;
+            document.getElementById('pos-count').textContent = (realPositions.length + paperPositions.length) + ' open';
         });
 }
 
@@ -334,15 +366,13 @@ function removeRealPosition(symbol) {
         .then(r => r.json()).then(d => { if(d.status==='ok'){alert(symbol+' removed');loadRealPositions();} else{alert('Error');} });
 }
 
-// Load on page open
-setTimeout(loadRealPositions, 2000);
-setInterval(loadRealPositions, 30000);
-var socket = io();
+
 function fmt(n) { return 'Rs.' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2}); }
 function colorVal(el, val) { el.className = 'value ' + (val > 0 ? 'green' : val < 0 ? 'red' : 'gray'); }
 
 setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN'); }, 1000);
 
+var socket = io();
 socket.on('state_update', (d) => {
     document.getElementById('capital').textContent = fmt(d.capital || 0);
     document.getElementById('portfolio_val').textContent = fmt(d.portfolio_val || d.capital || 0);
@@ -377,6 +407,20 @@ socket.on('state_update', (d) => {
         thtml += `<tr><td style="color:#94a3b8;">${t.date || ''}</td><td style="color:#94a3b8;">${t.time || ''}</td><td>${String(t.symbol||'').replace('.NS','')}</td><td><span class="badge ${bClass}">${(t.action||'').toUpperCase()}</span></td><td>${fmt(t.price || t.buy_price || 0)}</td><td>${t.qty || 0}</td><td>${Number(t.rsi||0).toFixed(1)}</td><td>${pnlStr}</td><td style="color:#94a3b8;">${t.reason || ''}</td></tr>`;
     });
     document.getElementById('trade-log').innerHTML = thtml || '<tr><td colspan="9" class="empty-msg">No trades yet</td></tr>';
+// Set paper positions for combined table
+    var positions = d.positions || {};
+    window._paperPositions = Object.keys(positions).map(function(sym){
+        var p = positions[sym];
+        return {
+            symbol: sym,
+            qty: p.qty || 0,
+            buy_price: p.buy_price || 0,
+            ltp: p.ltp || p.current_price || p.buy_price || 0,
+            pnl: p.pnl || 0,
+            itype: p.itype || 'STOCK'
+        };
+    });
+    loadRealPositions();
 });
 </script>
 </body>
