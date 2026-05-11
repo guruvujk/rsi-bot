@@ -409,7 +409,10 @@ def manual_add_position():
     if broker.lower() in ['paper', 'manual']:
         return jsonify({"error": f"Cannot add position with broker='{broker}'. Use a real broker like Kite, Groww, or Upstox"}), 400
     
-    sl_price = round(buy_price * 0.95, 2)
+    sl_price  = round(buy_price * 0.95, 2) if itype != 'MF' else 0
+    ltp       = float(data.get("ltp", buy_price)) if itype == 'MF' else buy_price
+    pnl       = round((ltp - buy_price) * qty, 2) if itype == 'MF' else 0
+    
     
     # Check if this is a real broker
     is_real_broker = broker.lower() in REAL_BROKERS
@@ -425,8 +428,8 @@ def manual_add_position():
                 (symbol, itype, qty, buy_price, ltp, pnl, pnl_pct,
                  sl_price, tp_price, tsl_active, synced_at, is_open,
                  broker, source, paper_mode)
-            VALUES (%s, %s, %s, %s, %s, 0, 0, %s, 0, FALSE, NOW(), TRUE, %s, %s, %s)
-        """, (symbol, itype, qty, buy_price, buy_price, sl_price, broker, broker, paper_mode))
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, FALSE, NOW(), TRUE, %s, %s, %s)
+        """, (symbol, itype, qty, buy_price, ltp, pnl, round((ltp-buy_price)/buy_price*100,2) if buy_price else 0, sl_price, broker, broker, paper_mode))
         conn.commit()
         cur.close()
         conn.close()

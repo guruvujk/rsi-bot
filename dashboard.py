@@ -221,7 +221,11 @@ DASHBOARD_HTML = """
             <div><label style="font-size:11px;">Qty</label><input id="m-qty" type="number" placeholder="2" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:80px;"></div>
             <div><label style="font-size:11px;">Buy Price</label><input id="m-price" type="number" placeholder="1852.30" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:100px;"></div>
             <div><label style="font-size:11px;">Broker</label><select id="m-broker" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option>Kite</option><option>Groww</option><option>Upstox</option><option>Zerodha</option></select></div>
-            <div><label style="font-size:11px;">Type</label><select id="m-itype" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option value="STOCK">STOCK</option><option value="US_STOCK">US_STOCK</option></select></div>
+            <div><label style="font-size:11px;">Type</label><select id="m-itype" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option value="STOCK">STOCK</option><option value="US_STOCK">US_STOCK</option><option value="MF">Mutual Fund</option></select></div>
+<div id="m-ltp-div" style="display:none;flex-direction:column;gap:4px;">
+                <label style="font-size:11px;">Current Value</label>
+                <input id="m-ltp" type="number" placeholder="6287" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:100px;">
+            </div>
             <button onclick="addRealPosition()" style="padding:7px 18px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-weight:600;"> Add Real Position</button>
             <span id="m-msg" style="font-size:12px;color:#64748b;"></span>
         </div>
@@ -250,6 +254,10 @@ DASHBOARD_HTML = """
 <script>
 // Add real position (paper_mode = false)
 
+document.getElementById('m-itype').addEventListener('change', function(){
+    document.getElementById('m-ltp-div').style.display = this.value === 'MF' ? 'flex' : 'none';
+});
+
 function addRealPosition() {
     const symbol = document.getElementById('m-symbol').value.trim().toUpperCase();
     const qty = document.getElementById('m-qty').value;
@@ -265,10 +273,11 @@ function addRealPosition() {
     }
     
     msg.textContent = '... Adding real position...';
+    var ltp_val = itype === 'MF' ? parseFloat(document.getElementById('m-ltp').value || buy_price) : parseFloat(buy_price);
     fetch('/api/auto/manual/add', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({symbol, qty: parseInt(qty), buy_price: parseFloat(buy_price), broker, itype})
+        body: JSON.stringify({symbol, qty: parseInt(qty), buy_price: parseFloat(buy_price), broker, itype, ltp: ltp_val})
     }).then(r => r.json()).then(d => {
         if (d.status === 'added') {
             msg.textContent = 'OK Real position added! P&L will update live.';
@@ -575,6 +584,8 @@ def push_updates():
             ltp_cache = {}
             for pos in real_positions:
                 sym = pos['symbol']
+                if pos.get('itype') == 'MF':
+                    continue
                 if sym not in ltp_cache:
                     try:
                         ltp_cache[sym] = yf.Ticker(sym).fast_info['last_price']
@@ -582,10 +593,10 @@ def push_updates():
                         ltp_cache[sym] = None
             conn = get_conn()
             cur  = conn.cursor()
-            cur.execute("SELECT id, symbol, buy_price, qty FROM upstox_positions WHERE is_open = TRUE")
+            cur.execute("SELECT id, symbol, buy_price, qty, itype FROM upstox_positions WHERE is_open = TRUE AND itype != 'MF'")
             rows = cur.fetchall()
             for row in rows:
-                rid, sym, buy, qty = row
+                rid, sym, buy, qty, itype = row
                 ltp = ltp_cache.get(sym)
                 if ltp and buy:
                     pnl     = round((ltp - buy) * qty, 2)
