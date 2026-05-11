@@ -1,5 +1,5 @@
 {
-  "capital": 289467.35930000007,
+  "capital": 297317.7593000001,
   "positions": {
     "ITC.NS": {
       "qty": 16,
@@ -18,9 +18,9 @@
       "highest_price": 311.25,
       "tsl_activates_at": 340.94,
       "broker": "Groww",
-      "ltp": 307.3,
-      "pnl": -42.4,
-      "pnl_pct": -0.85
+      "ltp": 306.15,
+      "pnl": -60.8,
+      "pnl_pct": -1.23
     },
     "MARUTI.NS": {
       "qty": 1,
@@ -39,9 +39,9 @@
       "highest_price": 13777.0,
       "tsl_activates_at": 15046.9,
       "broker": "Kite",
-      "ltp": 13578.0,
-      "pnl": -101.0,
-      "pnl_pct": -0.74
+      "ltp": 13498.0,
+      "pnl": -181.0,
+      "pnl_pct": -1.32
     },
     "SBIN.NS": {
       "qty": 9,
@@ -58,9 +58,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 980.8,
-      "pnl": 27.9,
-      "pnl_pct": 0.32
+      "ltp": 971.9,
+      "pnl": -52.2,
+      "pnl_pct": -0.59
     },
     "BHARTIARTL.NS": {
       "qty": 5,
@@ -77,28 +77,9 @@
       "entry_time": "11:29",
       "tsl_price": null,
       "tp_price": 1905.44,
-      "ltp": 1774.1,
-      "pnl": 49.0,
-      "pnl_pct": 0.56
-    },
-    "CIPLA.NS": {
-      "qty": 6,
-      "buy_price": 1335.8,
-      "buy_time": "06:14",
-      "itype": "STOCK",
-      "stop_loss": 1309.084,
-      "target": 1375.874,
-      "highest_price": 1335.8,
-      "tsl_active": false,
-      "sl_price": 1309.084,
-      "peak_price": 1336.0,
-      "allocation": 8014.8,
-      "entry_time": "06:14",
-      "tsl_price": null,
-      "tp_price": 1442.66,
-      "ltp": 1321.2,
-      "pnl": -87.6,
-      "pnl_pct": -1.09
+      "ltp": 1758.5,
+      "pnl": -29.0,
+      "pnl_pct": -0.33
     }
   },
   "trades": [
@@ -360,5 +341,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 189.31
+  "return_pct": 196.99
 }
