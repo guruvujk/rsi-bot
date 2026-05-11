@@ -391,6 +391,10 @@ def scan_symbol(symbol, current_prices):
         if symbol in pt.positions:
             pos     = pt.positions[symbol]
             bp      = pos['buy_price']
+            # Update live price and P&L for dashboard
+            pos['ltp']     = price
+            pos['pnl']     = round((price - bp) * pos.get('qty', 1), 2)
+            pos['pnl_pct'] = round((price - bp) / bp * 100, 2) if bp else 0
             chg_pct = (price - bp) / bp
             tp_pct  = get_adaptive_tp(itype)
             half_tp = tp_pct * 0.5
