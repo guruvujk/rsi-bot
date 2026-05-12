@@ -102,11 +102,11 @@ DASHBOARD_HTML = """
         .stat2 { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
                  padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
                  display: flex; flex-direction: column; align-items: center; }
-        .label { font-size: 11px; color: #64748b; text-transform: uppercase;
+        .label { font-size: 11px; color: #7c3aed; text-transform: uppercase;
                  letter-spacing: 0.8px; margin-bottom: 6px; }
         .value { font-size: 22px; font-weight: 600; }
         .stat2 .value { font-size: 20px; }
-        .note { margin-top: 8px; font-size: 11px; color: #64748b; text-align: center; }
+        .note { margin-top: 8px; font-size: 11px; color: #7c3aed; text-align: center; }
         .green { color: #16a34a; }
         .red { color: #dc2626; }
         .blue { color: #2563eb; }
@@ -115,7 +115,7 @@ DASHBOARD_HTML = """
         .grid1 { display: grid; grid-template-columns: 1fr; gap: 14px; padding: 0 28px 20px; }
         .box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
                overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .box-title { padding: 11px 16px; font-size: 12px; font-weight: 600; color: #64748b;
+        .box-title { padding: 11px 16px; font-size: 12px; font-weight: 600; color: #7c3aed;
                      border-bottom: 1px solid #f1f5f9; text-transform: uppercase;
                      letter-spacing: 0.5px; background: #f8fafc;
                      display: flex; align-items: center; justify-content: space-between; }
@@ -129,7 +129,7 @@ DASHBOARD_HTML = """
                  font-size: 11px; font-weight: 600; }
         .badge-buy { background: #dcfce7; color: #16a34a; }
         .badge-sell { background: #fee2e2; color: #dc2626; }
-        .badge-hold { background: #f1f5f9; color: #64748b; }
+        .badge-hold { background: #f1f5f9; color: #7c3aed; }
         .rsi-bar-wrap { width: 70px; height: 7px; background: #e2e8f0; border-radius: 4px;
                         display: inline-block; vertical-align: middle; }
         .rsi-bar { height: 100%; border-radius: 4px; }
@@ -160,7 +160,7 @@ DASHBOARD_HTML = """
     <div class="label">Unrealised P&L</div>
     <div class="value gray" id="open_pnl">Rs.0</div>
     <div style="margin-top:6px;font-size:11px;color:#64748b;">
-        Total: <span id="total_pnl" style="font-weight:600;color:#475569;">Rs.0</span>
+        Total: <span id="total_pnl" style="font-weight:600;color:#7c3aed;">Rs.0</span>
     </div>
 </div>
 </div>
@@ -236,7 +236,7 @@ DASHBOARD_HTML = """
 <div class="grid1">
     <div class="box">
         <div class="box-title" style="background:#eff6ff;border-bottom:1px solid #bfdbfe;">
-            <span style="color:#2563eb;"> All Real Portfolios (Kite / Groww / Upstox / Zerodha)</span>
+            <span style="color:#2563eb;"> </span>
             <div>
                 <span id="upstox-token-status" style="font-size:11px;padding:2px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;">Ready</span>
                 <button onclick="upstoxLogin()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid #bfdbfe;background:#fff;color:#2563eb;"> Upstox Login</button>
@@ -244,8 +244,8 @@ DASHBOARD_HTML = """
             </div>
         </div>
         <table>
-            <thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Broker</th><th>Synced</th><th></th></tr></thead>
-            <tbody id="upstox-body"><tr><td colspan="9" class="empty-msg">No real positions. Add via form above or sync broker.</td></tr></tbody>
+            
+            <tbody id="upstox-body"></tbody>
         </table>
         <div id="upstox-sync-msg" style="padding:8px 16px;font-size:12px;color:#64748b;display:none;"></div>
     </div>
@@ -344,7 +344,7 @@ function loadRealPositions() {
 
             // Separator if both exist
             if (realPositions.length > 0 && paperPositions.length > 0) {
-                html += '<tr><td colspan="7" style="padding:4px 16px;font-size:10px;color:#94a3b8;background:#f8fafc;border-top:2px dashed #e2e8f0;">PAPER TRADES</td></tr>';
+                html += '<tr><td colspan="7" style="padding:8px 16px;font-size:13px;font-weight:700;color:#7c3aed;background:#f8fafc;border-top:2px dashed #e2e8f0;">PAPER TRADES</td></tr>';
             }
 
             // Paper positions below
