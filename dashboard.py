@@ -88,7 +88,7 @@ DASHBOARD_HTML = """
         body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #1a1a2e; }
         .header { background: #fff; padding: 14px 28px; border-bottom: 1px solid #e2e8f0;
                   display: flex; align-items: center; justify-content: space-between;
-                  box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+                  box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 2px solid #0891b2; }
         .header h1 { font-size: 18px; font-weight: 600; color: #2563eb; }
         .paper-badge { background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 600;
                        padding: 3px 10px; border-radius: 20px; border: 1px solid #bfdbfe; }
@@ -98,9 +98,9 @@ DASHBOARD_HTML = """
         .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; padding: 20px 28px; }
         .stats2 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; padding: 0 28px 20px; }
         .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-                padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+                padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 2px solid #0891b2; }
         .stat2 { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-                 padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                 padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 2px solid #0891b2;
                  display: flex; flex-direction: column; align-items: center; }
         .label { font-size: 11px; color: #7c3aed; text-transform: uppercase;
                  letter-spacing: 0.8px; margin-bottom: 6px; }
@@ -114,7 +114,7 @@ DASHBOARD_HTML = """
         .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 28px 20px; }
         .grid1 { display: grid; grid-template-columns: 1fr; gap: 14px; padding: 0 28px 20px; }
         .box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-               overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+               overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 2px solid #0891b2; }
         .box-title { padding: 11px 16px; font-size: 12px; font-weight: 600; color: #7c3aed;
                      border-bottom: 1px solid #f1f5f9; text-transform: uppercase;
                      letter-spacing: 0.5px; background: #f8fafc;
@@ -143,7 +143,7 @@ DASHBOARD_HTML = """
 
 <div class="header">
     <div style="display:flex;align-items:center;gap:12px;">
-        <h1> RSI Algo Bot</h1>
+        <h1 style="font-size:28px;font-weight:700;text-transform:uppercase;color:#7c3aed;letter-spacing:2px;"> RSI Algo Bot</h1>
         <span class="paper-badge"> Paper Trade</span>
     </div>
     <div style="font-size:13px;color:#64748b;">
