@@ -142,8 +142,8 @@ def get_signal(df: pd.DataFrame) -> tuple:
     # ── Signal Logic ─────────────────────────────────────────────────────────
     # RSI is primary signal; MACD is confirmation
     ma200_today = _safe_float(ma200.iloc[-1], default=0.0)
-          above_trend = price > ma200_today > 0
-          if rsi_val < RSI_BUY and macd_bull and volume_ok and above_trend:
+    above_trend = price > ma200_today > 0
+    if rsi_val < RSI_BUY and macd_bull and volume_ok and above_trend:
         signal = "BUY"    # RSI + MACD + Volume all agree ✅
     elif rsi_val > RSI_SELL and not macd_bull and volume_ok:
         signal = "SELL"   # RSI + MACD + Volume all agree ✅

@@ -21,4 +21,4 @@ logs/
 reset_neon.py
 force_reset.py
 logs/*.xlsx
-logs/*.csv
+logs/*.csvconfig.py

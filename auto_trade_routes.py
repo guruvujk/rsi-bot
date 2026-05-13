@@ -516,3 +516,40 @@ def manual_remove_position():
         print(f"[Manual] state remove error: {e}")
     
     return jsonify({"status": "removed", "symbol": symbol})
+# ── SYMBOL SEARCH ─────────────────────────────────────────────────────────────
+@auto_trade_bp.route("/search", methods=["GET"])
+def symbol_search():
+    """
+    GET /api/auto/search?q=RELI
+    Returns matching symbols from yfinance search.
+    """
+    q = request.args.get("q", "").strip()
+    if len(q) < 2:
+        return jsonify({"results": []})
+    try:
+        import yfinance as yf
+        search = yf.Search(q, max_results=8)
+        results = []
+        for item in search.quotes:
+            symbol   = item.get("symbol", "")
+            name     = item.get("longname") or item.get("shortname", "")
+            exch     = item.get("exchange", "")
+            itype    = item.get("quoteType", "EQUITY")
+            # Map exchange to itype
+            if itype == "MUTUALFUND":
+                mapped = "MF"
+            elif exch in ["NYQ", "NMS", "NGM", "PCX"]:
+                mapped = "US_STOCK"
+            elif exch in ["NSI", "BSE"]:
+                mapped = "STOCK"
+            else:
+                mapped = "STOCK"
+            results.append({
+                "symbol" : symbol,
+                "name"   : name,
+                "exchange": exch,
+                "itype"  : mapped,
+            })
+        return jsonify({"results": results})
+    except Exception as e:
+        return jsonify({"results": [], "error": str(e)})

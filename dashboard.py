@@ -114,7 +114,7 @@ DASHBOARD_HTML = """
         .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 28px 20px; }
         .grid1 { display: grid; grid-template-columns: 1fr; gap: 14px; padding: 0 28px 20px; }
         .box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-               overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 2px solid #0891b2; }
+               overflow: visible; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 2px solid #0891b2; }
         .box-title { padding: 11px 16px; font-size: 12px; font-weight: 600; color: #7c3aed;
                      border-bottom: 1px solid #f1f5f9; text-transform: uppercase;
                      letter-spacing: 0.5px; background: #f8fafc;
@@ -213,11 +213,12 @@ DASHBOARD_HTML = """
 <!-- Add Manual Position (Real Broker Only) -->
 <div class="grid1">
     <div class="box">
-        <div class="box-title" style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;">
+        <div class="box" style="overflow:visible;">
+    <div class="box-title" style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;">
             <span style="color:#16a34a;"> Add Real Position (Kite / Groww / Upstox / Zerodha)</span>
         </div>
-        <div style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-            <div><label style="font-size:11px;">Symbol</label><input id="m-symbol" placeholder="SUNPHARMA.NS" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:120px;"></div>
+        <div style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;position:relative;overflow:visible;">
+            <div style="position:relative"><label style="font-size:11px;">Symbol</label><input id="m-symbol" placeholder="Type to search..." autocomplete="off" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:180px;" oninput="symbolSearch(this.value)"><div id="symbol-dropdown" style="position:absolute;z-index:9999;top:100%;left:0;background:#fff;border:1px solid #e2e8f0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.1);min-width:300px;display:none;"></div></div>
             <div><label style="font-size:11px;">Qty</label><input id="m-qty" type="number" placeholder="2" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:80px;"></div>
             <div><label style="font-size:11px;">Buy Price</label><input id="m-price" type="number" placeholder="1852.30" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;width:100px;"></div>
             <div><label style="font-size:11px;">Broker</label><select id="m-broker" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;"><option>Kite</option><option>Groww</option><option>Upstox</option><option>Zerodha</option></select></div>
@@ -258,6 +259,34 @@ document.getElementById('m-itype').addEventListener('change', function(){
     document.getElementById('m-ltp-div').style.display = this.value === 'MF' ? 'flex' : 'none';
 });
 
+var searchTimer = null;
+function symbolSearch(val) {
+    clearTimeout(searchTimer);
+    var dd = document.getElementById('symbol-dropdown');
+    if (val.length < 2) { dd.style.display='none'; return; }
+    searchTimer = setTimeout(function(){
+        fetch('/api/auto/search?q=' + encodeURIComponent(val))
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if (!d.results || d.results.length === 0) { dd.style.display='none'; return; }
+                dd.innerHTML = "";
+                for(var i=0;i<d.results.length;i++){var r=d.results[i];var dv=document.createElement("div");dv.style.cssText="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px;";dv.innerHTML="<span style=font-weight:600;color:#1e3a5f>"+r.symbol+"</span> <span style=color:#64748b;font-size:11px>"+r.name+"</span><span style=float:right;font-size:10px;color:#94a3b8>"+r.exchange+"</span>";dv.dataset.symbol=r.symbol;dv.dataset.itype=r.itype;dv.onmouseover=function(){this.style.background="#f8fafc"};dv.onmouseout=function(){this.style.background="#fff"};dv.onclick=function(){selectSymbol(this.dataset.symbol,this.dataset.itype)};dd.appendChild(dv);}
+                dd.style.display = "block";
+                dd.style.display = 'block';
+            });
+    }, 300);
+}
+function selectSymbol(symbol, itype) {
+    document.getElementById('m-symbol').value = symbol;
+    document.getElementById('m-itype').value  = itype;
+    document.getElementById('symbol-dropdown').style.display = 'none';
+}
+document.addEventListener('click', function(e){
+    if (!e.target.closest('#symbol-dropdown') && e.target.id !== 'm-symbol') {
+        document.getElementById('symbol-dropdown').style.display = 'none';
+    }
+});
+ 
 function addRealPosition() {
     const symbol = document.getElementById('m-symbol').value.trim().toUpperCase();
     const qty = document.getElementById('m-qty').value;
