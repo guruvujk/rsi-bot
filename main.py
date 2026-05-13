@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 import pytz
 import requests
-
+from sounds import play_sound
 from config import (
     WATCHLIST, CAPITAL, RISK_PER_TRADE, STOP_LOSS_PCT, TARGET_PCT,
     MIN_PRICE, SCAN_INTERVAL, MAX_POSITIONS, MAX_SAME_SECTOR, MAX_CAPITAL_PER_TRADE,
@@ -781,6 +781,7 @@ def run_scheduler():
 if __name__ == "__main__":
     print("=" * 62)
     print("   RSI BOT — All Instruments Edition v3 (FIXED)")
+    play_sound("startup")
     print("   Paper Trade | No real money at risk")
     print("=" * 62)
 

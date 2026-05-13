@@ -13,6 +13,7 @@ import schedule
 import yfinance as yf
 import pandas as pd
 import numpy as np
+from sounds import play_sound
 from datetime import datetime, timedelta
 from typing import Optional
 import pytz
@@ -512,6 +513,10 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
         exit_reason = update_tsl(sym, price, df=df)
         if exit_reason:
             result = paper_sell(sym, price, exit_reason)
+            if exit_reason == "STOP LOSS":
+                play_sound("stoploss")
+            else:
+                play_sound("target")
             if result["success"]:
                 sells.append(result["trade"])
                 open_count -= 1
@@ -592,6 +597,7 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
             price      = signal["price"]
             allocation = MAX_CAPITAL_PER_TRADE_US if symbol in WATCHLIST_US else get_adjusted_allocation(symbol, MAX_CAPITAL_PER_TRADE)
             result     = paper_buy(symbol, price, allocation, signal, filter_log)
+            play_sound("buy")
             if result["success"]:
                 buys.append(result["position"])
                 open_count += 1
