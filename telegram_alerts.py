@@ -160,3 +160,23 @@ def speak_alert(message: str):
         except Exception as e:
             print(f"  [Voice] {e}")
     threading.Thread(target=_speak, daemon=True).start()
+# ── TELEGRAM VOICE MESSAGE ─────────────────────────────
+def send_voice_alert(message: str):
+    """Generate mp3 with gtts and send as voice message to Telegram."""
+    def _send():
+        try:
+            from gtts import gTTS
+            import tempfile, os
+            # Generate mp3
+            tts = gTTS(text=message, lang='en')
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+            tts.save(tmp.name)
+            # Send to Telegram as voice message
+            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendVoice"
+            with open(tmp.name, 'rb') as f:
+                requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID}, files={"voice": f}, timeout=15)
+            os.unlink(tmp.name)  # cleanup
+        except Exception as e:
+            print(f"  [VoiceMsg] {e}")
+    import threading
+    threading.Thread(target=_send, daemon=True).start()

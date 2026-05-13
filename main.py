@@ -16,7 +16,7 @@ from config import (
     SCAN_INTERVAL_FOREX, SCAN_INTERVAL_COMMODITY,
 )
 from rsi_engine import fetch_ohlcv, get_signal
-from telegram_alerts import send_telegram
+from telegram_alerts import send_telegram, send_voice_alert
 from dashboard import start_dashboard, bot_state as state
 from paper_trade import PaperTrader
 from db_state import load_trades, load_state as db_load_state
@@ -538,6 +538,11 @@ def scan_symbol(symbol, current_prices):
                     f"R S I {rsi_val:.0f}. "
                     f"Buying {qty} units.",
                     voice="Raj"
+                )
+                send_voice_alert(
+                    f"Buy signal on {sym_d}. "
+                    f"R S I {rsi_val:.0f}. "
+                    f"Buying {qty} units."
                 )
                 print(f"    → PAPER BUY | {qty}x @ {p_str}"
                       f" | SL:{sl_pct*100:.1f}% TP:{tp_pct*100:.1f}%")
