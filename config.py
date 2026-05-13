@@ -47,7 +47,7 @@ LOAD_SAVED_POSITIONS = True    # FIX: enabled — crash recovery works now
 
 # ── RSI Settings ────────────────────────────────────
 RSI_PERIOD = 14
-RSI_BUY    = 45    # ✅ UPDATED: was 42 → 40 (catches more oversold entries)
+RSI_BUY    = 35   # ✅ UPDATED: was 42 → 40 (catches more oversold entries)
 RSI_SELL   = 70    # FIX: tighter (was 65) — only strong overbought signals
 
 # ── Scan Intervals (seconds) ─────────────────────────

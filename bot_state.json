@@ -1,5 +1,5 @@
 {
-  "capital": 298665.05930000014,
+  "capital": 289723.30930000014,
   "positions": {
     "SBIN.NS": {
       "qty": 9,
@@ -16,9 +16,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 966.3,
-      "pnl": -102.6,
-      "pnl_pct": -1.17
+      "ltp": 976.1,
+      "pnl": -14.4,
+      "pnl_pct": -0.16
     },
     "BHARTIARTL.NS": {
       "qty": 5,
@@ -35,9 +35,9 @@
       "entry_time": "11:29",
       "tsl_price": null,
       "tp_price": 1905.44,
-      "ltp": 1771.2,
-      "pnl": 34.5,
-      "pnl_pct": 0.39
+      "ltp": 1762.3,
+      "pnl": -10.0,
+      "pnl_pct": -0.11
     },
     "RELIANCE.NS": {
       "qty": 6,
@@ -48,9 +48,9 @@
       "target": 1424.593,
       "highest_price": 1393.3,
       "tsl_active": false,
-      "ltp": 1388.7,
-      "pnl": 33.6,
-      "pnl_pct": 0.4
+      "ltp": 1366.9,
+      "pnl": -97.2,
+      "pnl_pct": -1.17
     },
     "ICICIBANK.NS": {
       "qty": 7,
@@ -64,6 +64,19 @@
       "ltp": 1244.4,
       "pnl": -17.5,
       "pnl_pct": -0.2
+    },
+    "WIPRO.NS": {
+      "qty": 47,
+      "buy_price": 190.25,
+      "buy_time": "06:53",
+      "itype": "STOCK",
+      "stop_loss": 186.445,
+      "target": 195.9575,
+      "highest_price": 191.05,
+      "tsl_active": false,
+      "ltp": 190.3,
+      "pnl": 2.35,
+      "pnl_pct": 0.03
     }
   },
   "trades": [
@@ -388,6 +401,34 @@
       "pnl": "",
       "reason": "RSI BUY",
       "itype": "STOCK"
+    },
+    {
+      "date": "12-May-2026",
+      "time": "12:00",
+      "symbol": "LT.NS",
+      "action": "BUY",
+      "price": 3895.0,
+      "buy_price": 3895.0,
+      "sell_price": "",
+      "qty": 2,
+      "rsi": 36.9,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "12-May-2026",
+      "time": "12:23",
+      "symbol": "WIPRO.NS",
+      "action": "BUY",
+      "price": 190.25,
+      "buy_price": 190.25,
+      "sell_price": "",
+      "qty": 47,
+      "rsi": 23.8,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 2,
@@ -395,5 +436,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 152.2,
-  "return_pct": 198.61
+  "return_pct": 189.59
 }
