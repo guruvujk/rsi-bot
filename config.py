@@ -18,14 +18,13 @@ TELEGRAM_CHAT_ID = "5782497984"
 
 # ── Capital & Risk ───────────────────────────────────
 CAPITAL               = 100_000    # ₹1,00,000 virtual capital
-RISK_PER_TRADE        = 0.03       # FIX: 3% per trade (was 5% — too aggressive)
-STOP_LOSS_PCT         = 0.02       # FIX: 2% base SL (adaptive SL overrides per type)
-TARGET_PCT            = 0.03       # FIX: 3% base TP (adaptive TP overrides per type)
-MIN_PRICE             = 1.0        # Skip instruments below ₹1
-MAX_POSITIONS         = 5          # FIX: 5 max (was 8 — too many open at once)
+RISK_PER_TRADE        = 0.02       # 2% per trade — safer
+STOP_LOSS_PCT         = 0.03       # 3% SL — gives room below entry
+TARGET_PCT            = 0.08       # 8% TP — RSI 35 stocks recover well
+MIN_PRICE             = 10.0       # Skip penny stocks below ₹10
+MAX_POSITIONS         = 5          # Max 5 open at once
 MAX_SAME_SECTOR       = 2          # Max 2 per sector
-MAX_CAPITAL_PER_TRADE = 15_000     # ✅ RAISED: ₹15,000 per position (was ₹5,000)
-
+MAX_CAPITAL_PER_TRADE = 15_000     # ₹15,000 per position
 # ── Currency Settings ────────────────────────────────
 BASE_CURRENCY = "INR"
 USD_INR_RATE  = 85.5
@@ -46,9 +45,11 @@ POSITIONS_FILE       = "logs/positions.json"
 LOAD_SAVED_POSITIONS = True    # FIX: enabled — crash recovery works now
 
 # ── RSI Settings ────────────────────────────────────
-RSI_PERIOD = 14
-RSI_BUY    = 35   # ✅ UPDATED: was 42 → 40 (catches more oversold entries)
-RSI_SELL   = 70    # FIX: tighter (was 65) — only strong overbought signals
+RSI_PERIOD   = 14
+RSI_BUY      = 45    # ✅ SELECTIVE: only genuinely oversold entries (below 35)
+RSI_SELL     = 68    # ✅ UPDATED: exit at 68 (was 70) — lock profits earlier
+RSI_HOOK     = True  # ✅ NEW: wait for RSI to turn up before buying
+RSI_HOOK_MIN = 30    # RSI must touch 30 before hook triggers
 VOICE_ALERTS = True
 
 # ── Scan Intervals (seconds) ─────────────────────────

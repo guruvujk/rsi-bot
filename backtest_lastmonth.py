@@ -5,7 +5,7 @@ from config import WATCHLIST, RSI_BUY, RSI_SELL, CAPITAL, MAX_CAPITAL_PER_TRADE,
 from rsi_engine import compute_rsi, compute_macd, _safe_float
 
 end = datetime.today()
-start = end - timedelta(days=30)
+start = end - timedelta(days=60)
 
 print("=" * 60)
 print(f"  LAST 30 DAYS BACKTEST")
