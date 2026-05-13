@@ -1,5 +1,7 @@
 # telegram_alerts.py — Complete Integration (Telegram + Local API)
 import requests
+import os
+import threading
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 
 # ── CONFIGURATION ──────────────────────────────────────
@@ -138,3 +140,23 @@ def update_position_price(symbol, current_price):
         )
     except:
         pass
+# ── VOICE ALERTS ───────────────────────────────────────
+def speak_alert(message: str):
+    """Text-to-speech alert using gTTS — runs in background thread."""
+    try:
+        from config import VOICE_ALERTS
+        if not VOICE_ALERTS:
+            return
+    except:
+        return
+    def _speak():
+        try:
+            from gtts import gTTS
+            import tempfile
+            tts = gTTS(text=message, lang='en')
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+            tts.save(tmp.name)
+            os.startfile(tmp.name)  # Windows media player
+        except Exception as e:
+            print(f"  [Voice] {e}")
+    threading.Thread(target=_speak, daemon=True).start()

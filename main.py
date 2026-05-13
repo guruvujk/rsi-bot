@@ -34,16 +34,19 @@ VOICE_ENABLED = os.environ.get("VOICE_ENABLED", "false").lower() == "true"
 
 def speak_alert(message: str, voice: str = "Raj"):
     if not VOICE_ENABLED:
-        return  # Skip on cloud — use Telegram instead
-    try:
-        requests.post(
-            "http://localhost:8080/api/alert",
-            json={"message": message, "voice": voice},
-            timeout=5
-        )
-    except Exception:
-        pass  # Voice Studio only runs on local PC
-
+        return
+    def _speak():
+        try:
+            from gtts import gTTS
+            import tempfile, os
+            tts = gTTS(text=message, lang='en')
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+            tts.save(tmp.name)
+            os.startfile(tmp.name)
+        except Exception as e:
+            print(f"  [Voice] {e}")
+    import threading
+    threading.Thread(target=_speak, daemon=True).start()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # State persistence helpers
