@@ -447,7 +447,14 @@ def scan_symbol(symbol, current_prices):
                         f"{'Profit' if pnl >= 0 else 'Loss'} "
                         f"rupees {abs(pnl):.0f}."
                     )
+                 
+                    send_voice_alert(
+                        f"{clean_reason} on {sym_d}. "
+                        f"{'Profit' if pnl >= 0 else 'Loss'} "
+                        f"rupees {abs(pnl):.0f}."
+                    )
                     print(f"    → PAPER SELL | {reason} | P&L ₹{pnl:,.2f}")
+                    
                     trade = {
                         'time':   datetime.now(IST).strftime('%H:%M'),
                         'symbol': symbol,
