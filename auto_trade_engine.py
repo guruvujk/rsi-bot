@@ -479,6 +479,12 @@ def update_tsl(symbol: str, current_price: float,
 # 
 # MAIN SCAN
 # 
+def run_scan():
+    if not is_market_open():
+        return
+    if check_circuit_breaker():
+        return
+    # rest of scan...
 def run_scan(symbols: list = None, force: bool = False) -> dict:
     now     = datetime.now(IST)
     symbols = symbols or WATCHLIST
@@ -635,6 +641,9 @@ def start_scheduler():
             if hh == 9  and mm < 15: continue
             if hh == 15 and mm > 30: continue
             schedule.every().day.at(f"{hh:02d}:{mm:02d}").do(run_scan)
+            schedule.every().day.at("09:00").do(pre_market_check)
+            schedule.every().day.at("00:00").do(reset_circuit_breaker)
+            schedule.every(5).minutes.do(sync_real_pnl)
 
     def _run():
         global _scheduler_running
