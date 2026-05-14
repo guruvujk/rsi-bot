@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 from upstox_db import save_token, sync_positions_to_db, load_token as db_load_token
 
-UPSTOX_API_KEY    = "936905f2-69df-464c-94d2-966b9997adbb"
-UPSTOX_API_SECRET = "n4u02df4xg"
-UPSTOX_REDIRECT   = "http://localhost:5000/upstox/callback"
+UPSTOX_API_KEY    = os.getenv("UPSTOX_API_KEY",    "936905f2-69df-464c-94d2-966b9997adbb")
+UPSTOX_API_SECRET = os.getenv("UPSTOX_API_SECRET", "n4u02df4xg")
+UPSTOX_REDIRECT   = os.getenv("UPSTOX_REDIRECT_URI","http://127.0.0.1:5000/upstox/callback")
 UPSTOX_TOKEN_FILE = "logs/upstox_token.json"
 
 def get_login_url():
