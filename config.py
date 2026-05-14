@@ -16,6 +16,12 @@ DRAWDOWN_PCT = 0.10  # 10% floor = ₹90,000  # 5% — pause BUY if capital drop
 TELEGRAM_TOKEN   = "8694229997:AAGfe1savDm39EsXsjuswJdGPbRD_ocGNaU"
 TELEGRAM_CHAT_ID = "5782497984"
 
+# ── Telegram Channels ────────────────────────────────
+TELEGRAM_CHAT_ID        = "5782497984"        # your personal ID (keep as fallback)
+CHANNEL_BUY_ALERTS      = "-1003915082810"     # JK RSI Buy Alerts
+CHANNEL_SELL_ALERTS     = "-1003918800692"     # JK RSI Sell Alerts
+CHANNEL_SYSTEM_ALERTS   = "-1003898029945"     # JK RSI System Alerts
+
 # ── Capital & Risk ───────────────────────────────────
 CAPITAL               = 100_000    # ₹1,00,000 virtual capital
 RISK_PER_TRADE        = 0.02       # 2% per trade — safer
