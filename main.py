@@ -806,12 +806,7 @@ if __name__ == "__main__":
           f" | Max pos: {MAX_POSITIONS}")
     print("=" * 62)
    
-    from auto_trade_engine import start_scheduler as start_auto_scheduler
-    from dashboard import app as flask_app
-    from production_features import run_with_auto_restart
-    run_with_auto_restart(start_auto_scheduler, "RSI Bot Scheduler")
     print('  [AutoTrade] Engine started')
-
     threading.Thread(target=start_dashboard, daemon=True).start()
     scan()
 

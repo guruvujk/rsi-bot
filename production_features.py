@@ -23,7 +23,7 @@ def is_market_day():
 # ── 2. Pre-Market Check ──────────────────────────────────────
 def pre_market_check():
     from db_state import load_state
-    from telegram_alerts import send_alert
+    from telegram_alerts import send_telegram as send_alert
     results = {}
 
     # DB check
@@ -83,7 +83,7 @@ def check_circuit_breaker():
         return True
     try:
         from db_state import load_state
-        from telegram_alerts import send_alert
+        from telegram_alerts import send_telegram as send_alert
         s = load_state()
         capital = s.get('capital', 100000)
         trades = s.get('trades', [])
@@ -307,7 +307,7 @@ def sync_real_pnl():
 
 # ── 9. Auto Restart Wrapper ──────────────────────────────────
 def run_with_auto_restart(func, name="Bot"):
-    from telegram_alerts import send_alert
+    from telegram_alerts import send_telegram as send_alert
     while True:
         try:
             print(f"[{name}] Starting...")

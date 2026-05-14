@@ -17,6 +17,27 @@ from sounds import play_sound
 from datetime import datetime, timedelta
 from typing import Optional
 import pytz
+try:
+    from pre_market import pre_market_check
+except ImportError:
+    def pre_market_check():
+        pass
+try:
+    from production_features import reset_circuit_breaker
+except ImportError:
+    def reset_circuit_breaker():
+        pass
+try:
+    from production_features import reset_circuit_breaker
+except ImportError:
+    def reset_circuit_breaker():
+        pass
+
+try:
+    from production_features import sync_real_pnl
+except ImportError:
+    def sync_real_pnl():
+        pass
 
 from blacklist import is_blacklisted, record_trade as blacklist_record
 from gainers  import get_position_multiplier, get_adjusted_allocation, record_trade as gainers_record
