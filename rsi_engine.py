@@ -88,6 +88,45 @@ def _safe_float(val, default: float = 0.0) -> float:
     except Exception:
         return default
 
+def is_rsi_hook(symbol: str, threshold: int = None) -> tuple:
+    """
+    RSI Hook — RSI went below threshold then turned up.
+    More accurate entry than simple RSI level.
+    Returns (hook_detected: bool, current_rsi: float)
+    """
+    from config import RSI_HOOK, RSI_HOOK_MIN
+    if not RSI_HOOK:
+        return True, 0.0  # hook disabled — always allow
+
+    threshold = threshold or RSI_HOOK_MIN
+
+    try:
+        df = yf.download(symbol, period='1mo',
+                         interval='15m', progress=False,
+                         auto_adjust=True, threads=False)
+        if df is None or df.empty:
+            return False, 0.0
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        close = df['Close'].squeeze()
+        delta = close.diff()
+        gain  = delta.clip(lower=0).ewm(com=13, min_periods=14).mean()
+        loss  = -delta.clip(upper=0).ewm(com=13, min_periods=14).mean()
+        rsi   = 100 - (100 / (1 + gain / loss.replace(0, 1e-9)))
+
+        r1 = _safe_float(rsi.iloc[-3])  # 3 candles ago
+        r2 = _safe_float(rsi.iloc[-2])  # 2 candles ago
+        r3 = _safe_float(rsi.iloc[-1])  # current
+
+        # Hook = dipped below threshold, now turning up
+        hook = (r2 < threshold) and (r3 > r2) and (r1 > r2)
+        return hook, round(r3, 2)
+
+    except Exception:
+        return False, 0.0
+
 
 def get_signal(df: pd.DataFrame) -> tuple:
     """

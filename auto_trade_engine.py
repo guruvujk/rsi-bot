@@ -601,6 +601,14 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
                 print(f"   {symbol:<20} NO SIGNAL  RSI {signal.get('rsi','?'):.1f}")
                 skipped.append({"symbol": symbol, "reason": "No entry signal"})
                 continue
+           
+            # RSI Hook filter
+            from rsi_engine import is_rsi_hook
+            hook, hook_rsi = is_rsi_hook(symbol)
+            if not hook:
+                print(f"   {symbol:<20} NO HOOK    RSI {hook_rsi:.1f} (waiting for turn)")
+                skipped.append({"symbol": symbol, "reason": f"RSI hook not confirmed {hook_rsi:.1f}"})
+                continue
 
             price      = signal["price"]
             allocation = MAX_CAPITAL_PER_TRADE_US if symbol in WATCHLIST_US else get_adjusted_allocation(symbol, MAX_CAPITAL_PER_TRADE)
