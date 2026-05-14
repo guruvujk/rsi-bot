@@ -771,8 +771,13 @@ def run_scheduler():
     from upstox_reminder import send_upstox_reminder
     schedule.every().day.at("08:30").do(send_upstox_reminder)
     while True:
-        schedule.run_pending()
-        time.sleep(1)
+        try:
+            schedule.run_pending()
+            time.sleep(1)
+        except Exception as e:
+            print(f"  ⚠️  Scheduler error: {e}")
+            time.sleep(5)
+            continue
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -808,4 +813,18 @@ if __name__ == "__main__":
 
     threading.Thread(target=start_dashboard, daemon=True).start()
     scan()
-    run_scheduler()
+
+    while True:
+        try:
+            run_scheduler()
+        except Exception as e:
+            print(f"  ⚠️  BOT CRASHED: {e}")
+            try:
+                from telegram_alerts import send_telegram
+                send_telegram(f"⚠️ BOT CRASHED: {e}\nRestarting in 60 sec...", "INFO")
+                play_sound("stoploss")
+            except Exception:
+                pass
+            time.sleep(60)
+            print("  🔄 Restarting scheduler...")
+            continue
