@@ -319,6 +319,7 @@ def check_rsi_overbought(df: pd.DataFrame) -> tuple[bool, float]:
 def paper_buy(symbol: str, price: float, allocation: float,
               signal: dict, filter_log: list) -> dict:
     brokerage   = round(allocation * BROKERAGE_PCT, 2)
+    price = round(price * 1.001, 4)  # slippage 0.1% on BUY
     qty         = int((allocation - brokerage) / price)
     if qty < 1:
         return {"success": False, "reason": "Insufficient allocation for even 1 share"}
@@ -366,6 +367,7 @@ def paper_buy(symbol: str, price: float, allocation: float,
 
 
 def paper_sell(symbol: str, exit_price: float, reason: str) -> dict:
+    exit_price = round(exit_price * 0.999, 4)  # slippage 0.1% on SELL
     positions = load_open_positions()
     if symbol not in positions:
         return {"success": False, "reason": "No open position"}
