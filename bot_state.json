@@ -16,9 +16,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 983.4,
-      "pnl": 51.3,
-      "pnl_pct": 0.58
+      "ltp": 983.7,
+      "pnl": 54.0,
+      "pnl_pct": 0.61
     },
     "ICICIBANK.NS": {
       "qty": 7,
@@ -29,9 +29,9 @@
       "target": 1284.307,
       "highest_price": 1255.2,
       "tsl_active": false,
-      "ltp": 1251.5,
-      "pnl": 32.2,
-      "pnl_pct": 0.37
+      "ltp": 1253.5,
+      "pnl": 46.2,
+      "pnl_pct": 0.53
     },
     "WIPRO.NS": {
       "qty": 47,
@@ -42,9 +42,9 @@
       "target": 195.9575,
       "highest_price": 191.05,
       "tsl_active": false,
-      "ltp": 188.25,
-      "pnl": -94.0,
-      "pnl_pct": -1.05
+      "ltp": 188.66,
+      "pnl": -74.73,
+      "pnl_pct": -0.84
     }
   },
   "trades": [
@@ -418,5 +418,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 429.2,
-  "return_pct": 206.94
+  "return_pct": 206.98
 }
