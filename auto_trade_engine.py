@@ -638,6 +638,19 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
             if result["success"]:
                 buys.append(result["position"])
                 open_count += 1
+                # Live order wiring
+                if os.getenv("LIVE_TRADING", "false").lower() == "true":
+                    try:
+                        from upstox_orders import execute_live_order
+                        pos = result["position"]
+                        execute_live_order(
+                            symbol,
+                            pos["qty"],
+                            pos["sl_price"],
+                            pos["tp_price"],
+                        )
+                    except Exception as e:
+                        print(f"  [LiveOrder] Failed: {e}")
 
     summary = {
         "scan_time"     : now.strftime("%d-%b-%Y %H:%M IST"),
