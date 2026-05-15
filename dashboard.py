@@ -189,7 +189,7 @@ DASHBOARD_HTML = """
         <table>
             <thead>
                 <tr>
-                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>Trig.</th><th>LTP</th><th>P&L</th><th>1D P&L</th><th>Tag</th><th></th>
+                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>SL</th><th>LTP</th><th>P&L</th><th>1D P&L</th><th>Tag</th><th></th>
                 </tr>
             </thead>
             <tbody id="positions-body">
@@ -355,7 +355,7 @@ function loadRealPositions() {
             for (var i = 0; i < realPositions.length; i++) {
                 var p = realPositions[i];
                 var buyFmt = 'Rs.' + Number(p.buy_price).toLocaleString('en-IN');
-                var trigFmt = p.trig_price ? 'Rs.' + Number(p.trig_price).toLocaleString('en-IN') : '-';
+                var trigFmt = p.sl_price ? 'Rs.' + Number(p.sl_price).toLocaleString('en-IN') : '-';
                 var dayPnl = p.day_pnl || 0;
                 var dayPnlFmt = (dayPnl >= 0 ? '+' : '') + 'Rs.' + Math.abs(dayPnl).toFixed(2);
                 var dayPnlColor = dayPnl > 0 ? '#16a34a' : dayPnl < 0 ? '#dc2626' : '#64748b';
@@ -367,7 +367,7 @@ function loadRealPositions() {
                 html += '<tr style="background:#f0fdf4;">' +
                     '<td style="font-weight:600">' + p.symbol + '</td>' +
                     '<td>' + p.qty + '</td>' +
-                    '<td>' + buyFmt + '</td>' + '<td style="color:#7c3aed;font-weight:600">' + trigFmt + '</td>' +
+                    '<td>' + buyFmt + '</td>' + '<td style="color:#dc2626;font-weight:600">' + trigFmt + '</td>' +
                     '<td>' + ltpFmt + '</td>' +
                     '<td style="font-weight:600;color:' + pnlColor + '">' + pnlFmt + '</td>' + '<td style="font-weight:600;color:' + dayPnlColor + '">' + dayPnlFmt + '</td>' +
                     '<td><span class="badge" style="background:' + brokerBg + ';color:' + brokerColor + '">' + (p.broker || 'Real') + '</span></td>' +
@@ -686,6 +686,7 @@ def api_state():
 
 if __name__ == "__main__":
     start_dashboard()
+
 
 
 
