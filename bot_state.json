@@ -16,9 +16,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 971.8,
-      "pnl": -53.1,
-      "pnl_pct": -0.6
+      "ltp": 970.6,
+      "pnl": -63.9,
+      "pnl_pct": -0.73
     },
     "ICICIBANK.NS": {
       "qty": 7,
@@ -29,9 +29,9 @@
       "target": 1284.307,
       "highest_price": 1255.2,
       "tsl_active": false,
-      "ltp": 1250.7,
-      "pnl": 26.6,
-      "pnl_pct": 0.3
+      "ltp": 1252.0,
+      "pnl": 35.7,
+      "pnl_pct": 0.41
     },
     "NTPC.NS": {
       "qty": 16,
@@ -40,11 +40,11 @@
       "itype": "STOCK",
       "stop_loss": 385.679,
       "target": 405.3565,
-      "highest_price": 394.6,
+      "highest_price": 396.05,
       "tsl_active": false,
-      "ltp": 394.6,
-      "pnl": 16.8,
-      "pnl_pct": 0.27
+      "ltp": 396.05,
+      "pnl": 40.0,
+      "pnl_pct": 0.64
     },
     "BAJAJ-AUTO.NS": {
       "qty": 1,
@@ -53,11 +53,11 @@
       "itype": "STOCK",
       "stop_loss": 10187.1,
       "target": 10706.85,
-      "highest_price": 10405.5,
+      "highest_price": 10406.0,
       "tsl_active": false,
-      "ltp": 10405.5,
-      "pnl": 10.5,
-      "pnl_pct": 0.1
+      "ltp": 10352.5,
+      "pnl": -42.5,
+      "pnl_pct": -0.41
     }
   },
   "trades": [
@@ -487,5 +487,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 455.05,
-  "return_pct": 199.23
+  "return_pct": 199.2
 }

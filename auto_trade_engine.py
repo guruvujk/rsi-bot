@@ -539,7 +539,11 @@ def run_scan(symbols: list = None, force: bool = False) -> dict:
             continue
         df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
         price = float(df["Close"].squeeze().iloc[-1])
-        exit_reason = update_tsl(sym, price, df=df)
+        broker = p.get("source", p.get("broker", "paper"))
+        if broker.lower() in ["paper", ""]:
+            exit_reason = update_tsl(sym, price, df=df)
+        else:
+            exit_reason = None
         if exit_reason:
             result = paper_sell(sym, price, exit_reason)
             if exit_reason == "STOP LOSS":
