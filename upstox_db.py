@@ -200,7 +200,7 @@ def sync_positions_to_db(positions: list):
         # Check if open row already exists for this symbol+broker
         cur.execute("""
             SELECT id FROM upstox_positions
-            WHERE symbol = %s AND is_open = TRUE AND source = 'upstox'
+            WHERE symbol = %s AND is_open = TRUE AND LOWER(source) = 'upstox'
         """, (symbol,))
         row = cur.fetchone()
 
@@ -341,3 +341,4 @@ def get_position_history() -> list:
     except Exception as e:
         print(f"[UpstoxDB] get_position_history error: {e}")
         return []
+

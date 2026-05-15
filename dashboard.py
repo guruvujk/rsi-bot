@@ -288,6 +288,8 @@ document.addEventListener('click', function(e){
 });
  
 function addRealPosition() {
+    const btn = document.querySelector('button[onclick="addRealPosition()"]');
+    if (btn) { btn.disabled = true; btn.textContent = '... Adding...'; }
     const symbol = document.getElementById('m-symbol').value.trim().toUpperCase();
     const qty = document.getElementById('m-qty').value;
     const buy_price = document.getElementById('m-price').value;
@@ -308,6 +310,7 @@ function addRealPosition() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({symbol, qty: parseInt(qty), buy_price: parseFloat(buy_price), broker, itype, ltp: ltp_val})
     }).then(r => r.json()).then(d => {
+        if (btn) { btn.disabled = false; btn.textContent = ' Add Real Position'; }
         if (d.status === 'added') {
             msg.textContent = 'OK Real position added! P&L will update live.';
             msg.style.color = '#16a34a';
@@ -686,6 +689,7 @@ def api_state():
 
 if __name__ == "__main__":
     start_dashboard()
+
 
 
 

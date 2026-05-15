@@ -16,9 +16,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 968.5,
-      "pnl": -82.8,
-      "pnl_pct": -0.94
+      "ltp": 967.0,
+      "pnl": -96.3,
+      "pnl_pct": -1.09
     },
     "ICICIBANK.NS": {
       "qty": 7,
@@ -29,9 +29,9 @@
       "target": 1284.307,
       "highest_price": 1255.2,
       "tsl_active": false,
-      "ltp": 1250.3,
-      "pnl": 23.8,
-      "pnl_pct": 0.27
+      "ltp": 1246.3,
+      "pnl": -4.2,
+      "pnl_pct": -0.05
     }
   },
   "trades": [
@@ -419,5 +419,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 455.05,
-  "return_pct": 215.86
+  "return_pct": 215.82
 }

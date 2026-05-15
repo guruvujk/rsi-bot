@@ -446,6 +446,17 @@ def manual_add_position():
     is_real_broker = broker.lower() in REAL_BROKERS
     paper_mode = not is_real_broker
 
+    # Duplicate check
+    try:
+        from db_state import get_conn as _gc
+        _conn = _gc(); _cur = _conn.cursor()
+        _cur.execute('SELECT id FROM upstox_positions WHERE symbol=%s AND broker=%s AND buy_price=%s AND is_open=TRUE', (symbol, broker, buy_price))
+        if _cur.fetchone():
+            _cur.close()
+            return jsonify({"error": f"Duplicate: {symbol} already exists at {broker} @ {buy_price}"}), 409
+        _cur.close()
+    except: pass
+
     # Save to Neon DB
     try:
         from db_state import get_conn
@@ -517,7 +528,7 @@ def manual_remove_position():
         if broker:
             cur.execute("""
                 UPDATE upstox_positions SET is_open = FALSE
-                WHERE symbol = %s AND broker = %s AND is_open = TRUE
+                WHERE id = (SELECT id FROM upstox_positions WHERE symbol = %s AND broker = %s AND is_open = TRUE ORDER BY id DESC LIMIT 1)
             """, (symbol, broker))
         else:
             cur.execute("""
@@ -581,6 +592,8 @@ def symbol_search():
         return jsonify({"results": results})
     except Exception as e:
         return jsonify({"results": [], "error": str(e)})
+
+
 
 
 
