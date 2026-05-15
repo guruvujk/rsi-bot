@@ -1,5 +1,5 @@
 {
-  "capital": 306953.00930000015,
+  "capital": 315920.6093000001,
   "positions": {
     "SBIN.NS": {
       "qty": 9,
@@ -16,9 +16,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 983.7,
-      "pnl": 54.0,
-      "pnl_pct": 0.61
+      "ltp": 968.7,
+      "pnl": -81.0,
+      "pnl_pct": -0.92
     },
     "ICICIBANK.NS": {
       "qty": 7,
@@ -29,22 +29,9 @@
       "target": 1284.307,
       "highest_price": 1255.2,
       "tsl_active": false,
-      "ltp": 1253.5,
-      "pnl": 46.2,
-      "pnl_pct": 0.53
-    },
-    "WIPRO.NS": {
-      "qty": 47,
-      "buy_price": 190.25,
-      "buy_time": "06:53",
-      "itype": "STOCK",
-      "stop_loss": 186.445,
-      "target": 195.9575,
-      "highest_price": 191.05,
-      "tsl_active": false,
-      "ltp": 188.66,
-      "pnl": -74.73,
-      "pnl_pct": -0.84
+      "ltp": 1250.0,
+      "pnl": 21.7,
+      "pnl_pct": 0.25
     }
   },
   "trades": [
@@ -411,12 +398,26 @@
       "pnl": 277.0,
       "reason": "TARGET HIT \ud83c\udfaf",
       "itype": "STOCK"
+    },
+    {
+      "date": "15-May-2026",
+      "time": "09:19",
+      "symbol": "WIPRO.NS",
+      "action": "SELL",
+      "price": 190.8,
+      "buy_price": "",
+      "sell_price": 190.8,
+      "qty": 47,
+      "rsi": 68.8,
+      "pnl": 25.85,
+      "reason": "RSI SELL \ud83d\udcc9",
+      "itype": "STOCK"
     }
   ],
-  "total_trades": 3,
-  "wins": 3,
+  "total_trades": 4,
+  "wins": 4,
   "losses": 0,
   "win_rate": 100.0,
-  "realised_pnl": 429.2,
-  "return_pct": 206.98
+  "realised_pnl": 455.05,
+  "return_pct": 215.86
 }

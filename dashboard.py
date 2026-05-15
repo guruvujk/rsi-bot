@@ -189,11 +189,11 @@ DASHBOARD_HTML = """
         <table>
             <thead>
                 <tr>
-                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>LTP</th><th>P&L</th><th>Tag</th><th></th>
+                    <th>Symbol</th><th>Qty</th><th>Buy @</th><th>Trig.</th><th>LTP</th><th>P&L</th><th>1D P&L</th><th>Tag</th><th></th>
                 </tr>
             </thead>
             <tbody id="positions-body">
-                <tr><td colspan="7" class="empty-msg">Loading positions...</td></tr>
+                <tr><td colspan="9" class="empty-msg">Loading positions...</td></tr>
             </tbody>
         </table>
     </div>
@@ -355,6 +355,10 @@ function loadRealPositions() {
             for (var i = 0; i < realPositions.length; i++) {
                 var p = realPositions[i];
                 var buyFmt = 'Rs.' + Number(p.buy_price).toLocaleString('en-IN');
+                var trigFmt = p.trig_price ? 'Rs.' + Number(p.trig_price).toLocaleString('en-IN') : '-';
+                var dayPnl = p.day_pnl || 0;
+                var dayPnlFmt = (dayPnl >= 0 ? '+' : '') + 'Rs.' + Math.abs(dayPnl).toFixed(2);
+                var dayPnlColor = dayPnl > 0 ? '#16a34a' : dayPnl < 0 ? '#dc2626' : '#64748b';
                 var ltpFmt = 'Rs.' + Number(p.ltp).toLocaleString('en-IN');
                 var pnlFmt = (p.pnl >= 0 ? '+' : '-') + 'Rs.' + Math.abs(p.pnl).toFixed(2);
                 var pnlColor = p.pnl > 0 ? '#16a34a' : p.pnl < 0 ? '#dc2626' : '#64748b';
@@ -363,9 +367,9 @@ function loadRealPositions() {
                 html += '<tr style="background:#f0fdf4;">' +
                     '<td style="font-weight:600">' + p.symbol + '</td>' +
                     '<td>' + p.qty + '</td>' +
-                    '<td>' + buyFmt + '</td>' +
+                    '<td>' + buyFmt + '</td>' + '<td style="color:#7c3aed;font-weight:600">' + trigFmt + '</td>' +
                     '<td>' + ltpFmt + '</td>' +
-                    '<td style="font-weight:600;color:' + pnlColor + '">' + pnlFmt + '</td>' +
+                    '<td style="font-weight:600;color:' + pnlColor + '">' + pnlFmt + '</td>' + '<td style="font-weight:600;color:' + dayPnlColor + '">' + dayPnlFmt + '</td>' +
                     '<td><span class="badge" style="background:' + brokerBg + ';color:' + brokerColor + '">' + (p.broker || 'Real') + '</span></td>' +
                     '<td><button data-sym="' + p.symbol + '" data-broker="' + (p.broker||'') + '" onclick="removeRealPosition(this.dataset.sym, this.dataset.broker)" style="font-size:10px;padding:2px 8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;">X</button></td>' +
                     '</tr>';
@@ -682,6 +686,11 @@ def api_state():
 
 if __name__ == "__main__":
     start_dashboard()
+
+
+
+
+
 
 
 

@@ -254,3 +254,9 @@ if __name__ == "__main__":
     print("Upstox Orders Module loaded ✅")
     print(f"Instrument map: {len(INSTRUMENT_MAP)} symbols")
     print(f"Token: {load_token()[:10]}..." if load_token() else "No token")
+
+
+
+
+# Alias for auto_trade_engine.py compatibility
+execute_live_order = execute_live_trade

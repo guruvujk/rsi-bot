@@ -363,8 +363,36 @@ def upstox_positions_from_db():
         if is_real_broker and is_not_paper:
             real_positions.append(pos)
     
-    return jsonify({
-        "source": "neon_db",
+    # Enrich with trig_price and day_pnl
+    try:
+        import yfinance as yf
+        symbols = [p.get("symbol","") for p in real_positions if p.get("symbol") and p.get("itype","STOCK") != "MF"]
+        ns_symbols = [s + ".NS" if not s.endswith(".NS") else s for s in symbols]
+        if ns_symbols:
+            tickers = yf.download(ns_symbols, period="2d", interval="1d", progress=False, auto_adjust=True)
+            prev_close_map = {}
+            for i, sym in enumerate(ns_symbols):
+                try:
+                    closes = tickers["Close"][sym] if len(ns_symbols) > 1 else tickers["Close"]
+                    prev_close_map[symbols[i]] = float(closes.iloc[-2])
+                except:
+                    prev_close_map[symbols[i]] = None
+        import math
+        for pos in real_positions:
+            pos["trig_price"] = pos.get("trig_price", pos.get("buy_price", 0))
+            if "day_pnl" in pos and (pos["day_pnl"] != pos["day_pnl"] or pos["day_pnl"] is None):
+                pos["day_pnl"] = 0
+            pc = prev_close_map.get(pos.get("symbol",""))
+            ltp = pos.get("ltp", 0)
+            qty = pos.get("qty", 0)
+            pos["day_pnl"] = round((ltp - pc) * qty, 2) if pc and ltp else 0
+    except Exception as e:
+        print(f"[day_pnl] {e}")
+        for pos in real_positions:
+            pos.setdefault("trig_price", pos.get("buy_price", 0))
+            pos.setdefault("day_pnl", 0)
+
+    return jsonify({"source": "neon_db",
         "total_in_db": len(all_positions),
         "count": len(real_positions),
         "positions": real_positions,
@@ -553,3 +581,6 @@ def symbol_search():
         return jsonify({"results": results})
     except Exception as e:
         return jsonify({"results": [], "error": str(e)})
+
+
+
