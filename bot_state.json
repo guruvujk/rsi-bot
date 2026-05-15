@@ -1,5 +1,5 @@
 {
-  "capital": 315920.6093000001,
+  "capital": 299228.80930000014,
   "positions": {
     "SBIN.NS": {
       "qty": 9,
@@ -16,9 +16,9 @@
       "entry_time": "05:43",
       "tsl_price": null,
       "tp_price": 1055.92,
-      "ltp": 967.0,
-      "pnl": -96.3,
-      "pnl_pct": -1.09
+      "ltp": 971.8,
+      "pnl": -53.1,
+      "pnl_pct": -0.6
     },
     "ICICIBANK.NS": {
       "qty": 7,
@@ -29,9 +29,35 @@
       "target": 1284.307,
       "highest_price": 1255.2,
       "tsl_active": false,
-      "ltp": 1246.3,
-      "pnl": -4.2,
-      "pnl_pct": -0.05
+      "ltp": 1250.7,
+      "pnl": 26.6,
+      "pnl_pct": 0.3
+    },
+    "NTPC.NS": {
+      "qty": 16,
+      "buy_price": 393.55,
+      "buy_time": "06:43",
+      "itype": "STOCK",
+      "stop_loss": 385.679,
+      "target": 405.3565,
+      "highest_price": 394.6,
+      "tsl_active": false,
+      "ltp": 394.6,
+      "pnl": 16.8,
+      "pnl_pct": 0.27
+    },
+    "BAJAJ-AUTO.NS": {
+      "qty": 1,
+      "buy_price": 10395.0,
+      "buy_time": "07:14",
+      "itype": "STOCK",
+      "stop_loss": 10187.1,
+      "target": 10706.85,
+      "highest_price": 10405.5,
+      "tsl_active": false,
+      "ltp": 10405.5,
+      "pnl": 10.5,
+      "pnl_pct": 0.1
     }
   },
   "trades": [
@@ -412,6 +438,48 @@
       "pnl": 25.85,
       "reason": "RSI SELL \ud83d\udcc9",
       "itype": "STOCK"
+    },
+    {
+      "date": "15-May-2026",
+      "time": "12:13",
+      "symbol": "NTPC.NS",
+      "action": "BUY",
+      "price": 393.55,
+      "buy_price": 393.55,
+      "sell_price": "",
+      "qty": 16,
+      "rsi": 40.7,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "15-May-2026",
+      "time": "12:14",
+      "symbol": "NTPC.NS",
+      "action": "BUY",
+      "price": 393.45,
+      "buy_price": 393.45,
+      "sell_price": "",
+      "qty": 16,
+      "rsi": 39.8,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
+    },
+    {
+      "date": "15-May-2026",
+      "time": "12:44",
+      "symbol": "BAJAJ-AUTO.NS",
+      "action": "BUY",
+      "price": 10395.0,
+      "buy_price": 10395.0,
+      "sell_price": "",
+      "qty": 1,
+      "rsi": 41.9,
+      "pnl": "",
+      "reason": "RSI BUY",
+      "itype": "STOCK"
     }
   ],
   "total_trades": 4,
@@ -419,5 +487,5 @@
   "losses": 0,
   "win_rate": 100.0,
   "realised_pnl": 455.05,
-  "return_pct": 215.82
+  "return_pct": 199.23
 }
